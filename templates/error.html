@@ -1,0 +1,11 @@
+{# Pantalla controlada para errores HTTP (400, 403, 404) y de base de datos (500) #}
+{% extends "base.html" %}
+{% block titulo %}Error {{ codigo }} · TecnoControl Escolar{% endblock %}
+
+{% block contenido %}
+<div class="text-center py-5">
+  <p class="display-4 text-muted mb-2">{{ codigo }}</p>
+  <p class="lead">{{ mensaje }}</p>
+  <a href="{{ url_for('auth.index') }}" class="btn btn-primary">Ir al inicio</a>
+</div>
+{% endblock %}

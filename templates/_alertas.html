@@ -1,0 +1,5 @@
+{% set avisos = get_flashed_messages(with_categories=true) %}
+{% if avisos %}
+  {% set categoria, mensaje = avisos[-1] %}
+  <div class="alert alert-{{ categoria }} mb-0" role="alert">{{ mensaje }}</div>
+{% endif %}

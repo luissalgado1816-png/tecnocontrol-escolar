@@ -1,0 +1,65 @@
+{# Plantilla base de TecnoControl Escolar #}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}TecnoControl Escolar{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="{% block clase_body %}{% endblock %}">
+
+{% if g.user %}
+<header class="topbar">
+  <div class="container d-flex align-items-center justify-content-between">
+    <span class="topbar-marca">TecnoControl Escolar</span>
+    <div class="d-flex align-items-center gap-3">
+      <span class="topbar-usuario">{{ g.user.username }}</span>
+      <button type="button" class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#modalCerrarSesion">
+        Cerrar sesión
+      </button>
+    </div>
+  </div>
+</header>
+<nav class="tabs">
+  <div class="container">
+    <ul class="nav nav-tabs-app">
+      {% for etiqueta, endpoint, activa in pestanas %}
+      <li class="nav-item">
+        <a class="nav-link {{ 'active' if activa }}" href="{{ url_for(endpoint) }}">{{ etiqueta }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</nav>
+{% endif %}
+
+<main class="container py-4">
+  {% block avisos %}{% include "_alertas.html" %}{% endblock %}
+  {% block contenido %}{% endblock %}
+</main>
+
+{% if g.user %}
+<div class="modal fade" id="modalCerrarSesion" tabindex="-1" aria-labelledby="tituloCerrar" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body">
+        <p class="fw-semibold mb-0" id="tituloCerrar">¿Quieres cerrar la sesión?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <form method="post" action="{{ url_for('auth.logout') }}" class="m-0">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-primary">Cerrar sesión</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script src="{{ url_for('static', filename='vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

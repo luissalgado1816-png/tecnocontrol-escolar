@@ -1,0 +1,92 @@
+{# Pantalla WF-00B: Restablecer contrasena institucional (RF-13) #}
+{% extends "base.html" %}
+{% block titulo %}Restablecer contraseña · TecnoControl Escolar{% endblock %}
+{% block clase_body %}pagina-acceso{% endblock %}
+{% block avisos %}{% endblock %}
+
+{% block contenido %}
+<div class="tarjeta-acceso">
+  <h1 class="acceso-marca">TecnoControl Escolar</h1>
+  <h2 class="acceso-titulo">Restablecer contraseña</h2>
+  <p class="text-muted small mb-4">Cuenta local de demostración</p>
+  {% if not actualizado %}
+    <form method="post">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="paso" value="verificar">
+      <div class="row g-3">
+        <div class="col-md-5">
+          <label for="numero" class="form-label">Usuario o número de control</label>
+          <input type="text" class="form-control {{ 'is-invalid' if errores.get('numero') }}"
+                 id="numero" name="numero" maxlength="50" autocomplete="username"
+                 value="{{ reset.numero if reset else request.form.get('numero', '') }}"
+                 {{ 'readonly' if reset }} required
+                 {% if errores.get('numero') %}aria-invalid="true" aria-describedby="error-numero"{% endif %}>
+          {% if errores.get('numero') %}
+          <div class="invalid-feedback" id="error-numero">{{ errores.numero }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-7">
+          <label for="correo" class="form-label">Correo institucional</label>
+          <input type="email" class="form-control {{ 'is-invalid' if errores.get('correo') }}"
+                 id="correo" name="correo" maxlength="120" autocomplete="email"
+                 value="{{ reset.correo if reset else request.form.get('correo', '') }}"
+                 {{ 'readonly' if reset }} required
+                 {% if errores.get('correo') %}aria-invalid="true" aria-describedby="error-correo"{% endif %}>
+          {% if errores.get('correo') %}
+          <div class="invalid-feedback" id="error-correo">{{ errores.correo }}</div>
+          {% endif %}
+        </div>
+      </div>
+      {% if not reset %}
+      <button type="submit" class="btn btn-outline-primary mt-3">Verificar</button>
+      {% endif %}
+    </form>
+    {% if reset %}
+    <p class="estado-verificado mt-4 mb-3" role="status">Datos coincidentes · campos habilitados</p>
+    {% endif %}
+
+    <form method="post" class="mt-4">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="paso" value="actualizar">
+      <div class="mb-3">
+        <label for="password" class="form-label">Nueva contraseña</label>
+        <input type="password" class="form-control {{ 'is-invalid' if errores.get('password') }}"
+               id="password" name="password" autocomplete="new-password" minlength="8"
+               {{ 'disabled' if not reset }} required
+               aria-describedby="ayuda-contrasena{% if errores.get('password') %} error-nueva{% endif %}"
+               {% if errores.get('password') %}aria-invalid="true"{% endif %}>
+        <div class="form-text" id="ayuda-contrasena">Mínimo 8 caracteres.</div>
+        {% if errores.get('password') %}
+        <div class="invalid-feedback" id="error-nueva">{{ errores.password }}</div>
+        {% endif %}
+      </div>
+      <div class="mb-4">
+        <label for="confirmar" class="form-label">Confirmar contraseña</label>
+        <input type="password" class="form-control {{ 'is-invalid' if errores.get('confirmar') }}"
+               id="confirmar" name="confirmar" autocomplete="new-password" minlength="8"
+               {{ 'disabled' if not reset }} required
+               {% if errores.get('confirmar') %}aria-invalid="true" aria-describedby="error-confirmar"{% endif %}>
+        {% if errores.get('confirmar') %}
+        <div class="invalid-feedback" id="error-confirmar">{{ errores.confirmar }}</div>
+        {% endif %}
+      </div>
+      <div class="d-flex flex-wrap gap-3 align-items-center">
+        <button type="submit" class="btn btn-primary" {{ 'disabled' if not reset }}>Actualizar contraseña</button>
+        <a href="{{ url_for('auth.login') }}">Volver a iniciar sesión</a>
+      </div>
+    </form>
+  {% else %}
+    <p class="estado-verificado" role="status">Contraseña actualizada correctamente.</p>
+    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Volver a iniciar sesión</a>
+  {% endif %}
+  <div class="area-alerta mt-4" aria-live="polite" aria-atomic="true">
+    {% include "_alertas.html" %}
+  </div>
+  {% if not actualizado and not reset %}
+  <p class="text-muted small mt-3 mb-0">
+    Antes de verificar, los campos de contraseña están deshabilitados.
+    Si los datos difieren, verifica tu usuario o número de control y correo.
+  </p>
+  {% endif %}
+</div>
+{% endblock %}

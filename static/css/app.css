@@ -1,0 +1,79 @@
+/* Paleta de colores institucionales y variables base de TecnoControl Escolar */
+:root {
+  --principal: #03345c;
+  --principal-hover: #0a4575;
+  --encabezado: #0a4575;
+  --secundario: #435b80;
+  --fondo: #f7f6ff;
+  --panel: #d4e9fa;
+  --superficie: #fff;
+  --texto: #17395f;
+  --texto-secundario: #52677d;
+  --borde: #7f9bb5;
+  --deshabilitado: #dee7ef;
+  --texto-deshabilitado: #536a80;
+  --error-fondo: #fff1f2;
+  --error-texto: #8b1e2d;
+  --error-borde: #b23d4c;
+  --aviso-fondo: #fff7e6;
+  --aviso-texto: #7a4c00;
+  --aviso-borde: #b58522;
+  --exito-fondo: #edf7f1;
+  --exito-texto: #1d5c3f;
+  --exito-borde: #4a8a63;
+  --bs-body-color: var(--texto);
+  --bs-body-bg: var(--fondo);
+  --bs-secondary-color: var(--texto-secundario);
+  --bs-border-color: var(--borde);
+}
+
+/* Estilos generales de fondo y enlaces */
+body { background: var(--fondo); color: var(--texto); }
+a { color: var(--principal); }
+a:hover { color: var(--principal-hover); }
+
+/* Barra superior institucional y pestanas de navegacion por rol */
+.topbar { background: var(--encabezado); color: var(--superficie); border-bottom: 1px solid var(--principal); padding: .75rem 0; }
+.topbar-marca { font-size: 1.3rem; font-weight: 700; }
+.topbar-usuario { font-size: .9rem; }
+.topbar .btn-outline-light { color: var(--superficie); border-color: var(--superficie); background: var(--secundario); --bs-btn-hover-color: var(--superficie); --bs-btn-hover-bg: var(--principal); --bs-btn-hover-border-color: var(--superficie); --bs-btn-active-color: var(--superficie); --bs-btn-active-bg: var(--principal); --bs-btn-active-border-color: var(--superficie); --bs-btn-focus-shadow-rgb: 255, 255, 255; }
+.topbar .btn-outline-light:hover { background: var(--principal); }
+.tabs { background: var(--panel); border-bottom: 1px solid var(--borde); }
+.nav-tabs-app { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .25rem; }
+.nav-tabs-app .nav-link { color: var(--texto); padding: .65rem 1rem; border-radius: 0; }
+.nav-tabs-app .nav-link:hover { background: var(--deshabilitado); }
+.nav-tabs-app .nav-link.active { background: var(--principal); color: var(--superficie); font-weight: 600; }
+
+/* Botones y campos de formulario */
+.btn { border-radius: 0; }
+.btn-primary { --bs-btn-color: var(--superficie); --bs-btn-bg: var(--principal); --bs-btn-border-color: var(--principal); --bs-btn-hover-color: var(--superficie); --bs-btn-hover-bg: var(--principal-hover); --bs-btn-hover-border-color: var(--principal-hover); --bs-btn-active-color: var(--superficie); --bs-btn-active-bg: var(--principal-hover); --bs-btn-active-border-color: var(--principal-hover); --bs-btn-disabled-bg: var(--deshabilitado); --bs-btn-disabled-border-color: var(--borde); --bs-btn-disabled-color: var(--texto-deshabilitado); --bs-btn-focus-shadow-rgb: 3, 52, 92; }
+.btn-outline-primary { --bs-btn-color: var(--superficie); --bs-btn-bg: var(--secundario); --bs-btn-border-color: var(--secundario); --bs-btn-hover-bg: var(--principal); --bs-btn-hover-color: var(--superficie); --bs-btn-hover-border-color: var(--principal); --bs-btn-active-bg: var(--principal); --bs-btn-active-color: var(--superficie); --bs-btn-active-border-color: var(--principal); --bs-btn-disabled-bg: var(--deshabilitado); --bs-btn-disabled-border-color: var(--borde); --bs-btn-disabled-color: var(--texto-deshabilitado); --bs-btn-focus-shadow-rgb: 67, 91, 128; }
+.btn-outline-secondary { --bs-btn-color: var(--superficie); --bs-btn-bg: var(--secundario); --bs-btn-border-color: var(--secundario); --bs-btn-hover-bg: var(--principal); --bs-btn-hover-color: var(--superficie); --bs-btn-hover-border-color: var(--principal); --bs-btn-active-bg: var(--principal); --bs-btn-active-color: var(--superficie); --bs-btn-active-border-color: var(--principal); --bs-btn-focus-shadow-rgb: 67, 91, 128; }
+.form-label { font-weight: 600; }
+.form-control { border-radius: 0; border-color: var(--borde); background-color: var(--superficie); }
+.form-control:focus { border-color: var(--principal); box-shadow: 0 0 0 .15rem #03345c33; }
+.form-control:disabled, .form-control[readonly] { background-color: var(--deshabilitado); color: var(--texto-deshabilitado); }
+.form-control.is-invalid { border-color: var(--error-borde); background-image: none; }
+.invalid-feedback { color: var(--error-texto); font-weight: 600; }
+.form-control.is-invalid:focus { border-color: var(--error-borde); box-shadow: 0 0 0 .15rem #b23d4c33; }
+
+/* Tarjeta de inicio de sesion, alertas y ventanas modales */
+.pagina-acceso main { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+.tarjeta-acceso { width: 100%; max-width: 610px; margin: 0 auto; background: var(--panel); border: 1px solid var(--borde); padding: 2rem; }
+.acceso-marca { font-size: 1.4rem; font-weight: 700; margin-bottom: 1.5rem; }
+.acceso-titulo { font-size: 1.8rem; font-weight: 700; margin-bottom: 1.5rem; }
+.area-alerta { min-height: 3rem; }
+.alert { border: 1px solid var(--borde); border-radius: 0; background: var(--panel); color: var(--texto); }
+.alert-danger { border-color: var(--error-borde); background-color: var(--error-fondo); color: var(--error-texto); }
+.alert-warning { border-color: var(--aviso-borde); background-color: var(--aviso-fondo); color: var(--aviso-texto); }
+.alert-success { border-color: var(--exito-borde); background-color: var(--exito-fondo); color: var(--exito-texto); }
+.estado-verificado { border-left: 3px solid var(--exito-borde); color: var(--exito-texto); padding-left: .75rem; font-weight: 600; }
+.modal-content { --bs-modal-bg: var(--superficie); --bs-modal-color: var(--texto); --bs-modal-border-color: var(--borde); }
+.modal-backdrop { --bs-backdrop-bg: var(--principal); }
+
+/* Ajustes responsivos para pantallas pequenas */
+@media (max-width: 575px) {
+  .tarjeta-acceso { padding: 1.25rem; }
+  .topbar .container { flex-wrap: wrap; gap: .75rem; }
+  .topbar .gap-3 { flex-wrap: wrap; }
+}
