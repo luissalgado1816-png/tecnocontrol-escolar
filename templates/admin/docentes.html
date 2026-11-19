@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block titulo %}Docentes · TecnoControl Escolar{% endblock %}
+{% block contenido %}
+<h1 class="h4 mb-3">Docentes</h1>
+
+<form method="get" class="busqueda-app mb-4">
+  <div class="row g-3 align-items-end">
+    <div class="col-md-3"><label for="q" class="form-label">Clave docente</label>
+      <input type="text" class="form-control" id="q" name="q" value="{{ q }}" maxlength="50"></div>
+    <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Buscar</button></div>
+    <div class="col-md-7" aria-live="polite">
+      {% if buscado and not filas %}<div class="alert alert-warning mb-0">Docente no encontrado. Usa Registrar docente para darlo de alta.</div>{% endif %}
+    </div>
+  </div>
+  <div class="row g-3 align-items-end mt-1">
+    <div class="col-md"><label for="paterno" class="form-label">Apellido paterno</label>
+      <input type="text" class="form-control" id="paterno" name="paterno" maxlength="60" value="{{ filtros.paterno }}"></div>
+    <div class="col-md"><label for="materno" class="form-label">Apellido materno</label>
+      <input type="text" class="form-control" id="materno" name="materno" maxlength="60" value="{{ filtros.materno }}"></div>
+    <div class="col-md"><label for="nombres" class="form-label">Nombres</label>
+      <input type="text" class="form-control" id="nombres" name="nombres" maxlength="80" value="{{ filtros.nombres }}"></div>
+    <div class="col-md-auto"><a href="{{ url_for('admin.docentes') }}" class="btn btn-outline-secondary">Limpiar formulario</a></div>
+    <div class="col-md-auto"><a href="{{ url_for('admin.docentes_nuevo') }}" class="btn btn-primary">Registrar docente</a></div>
+  </div>
+</form>
+<div class="table-responsive">
+  <table class="table table-hover align-middle bg-white">
+    <thead>
+      <tr>
+        <th>Clave</th><th>Docente</th><th>Materia</th><th>Grado</th><th>Estado laboral</th>
+        <th>Departamento</th><th>Carrera</th><th>Ficha</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in filas %}
+      <tr>
+        <td>{{ d.clave_docente }}</td>
+        <td>{{ d.nombre }}</td>
+        <td>{{ d.materias or '—' }}</td>
+        <td>{{ d.grado_academico }}</td>
+        <td>{{ d.estado_laboral }}</td>
+        <td>{{ d.departamento }}</td>
+        <td>{{ d.carreras or '—' }}</td>
+        <td><a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.docentes_ficha', id_docente=d.id_docente) }}">Abrir</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-center text-muted">Sin docentes que mostrar.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

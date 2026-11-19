@@ -1,5 +1,16 @@
 {% set avisos = get_flashed_messages(with_categories=true) %}
 {% if avisos %}
   {% set categoria, mensaje = avisos[-1] %}
+  {% if categoria == 'success' and g.user %}
+  <div class="toast-container position-fixed top-0 end-0 p-3" aria-live="polite">
+    <div class="toast aviso-exito" role="status" data-aviso-guardado data-bs-delay="6500">
+      <div class="toast-body d-flex align-items-center gap-3">
+        <span>{{ mensaje }}</span>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="toast" aria-label="Cerrar aviso"></button>
+      </div>
+    </div>
+  </div>
+  {% else %}
   <div class="alert alert-{{ categoria }} mb-0" role="alert">{{ mensaje }}</div>
+  {% endif %}
 {% endif %}

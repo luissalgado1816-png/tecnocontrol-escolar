@@ -1,0 +1,120 @@
+{# Pantallas WF-02 y WF-03: Alta y edicion de ficha de estudiante #}
+{% extends "base.html" %}
+{% block titulo %}Ficha de estudiante · TecnoControl Escolar{% endblock %}
+
+{% block contenido %}
+<h1 class="h4 mb-3">Ficha de estudiante</h1>
+
+{% if errores %}
+<div class="alert alert-danger" role="alert">
+  <ul class="mb-0">{% for e in errores %}<li>{{ e }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<form method="post" id="form-ficha" autocomplete="off">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+  <div class="seccion-ficha mb-3">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label for="matricula" class="form-label">Número de control</label>
+        <input type="text" class="form-control" id="matricula" name="matricula" maxlength="9"
+               value="{{ form.matricula }}" {{ 'readonly' if actual }} required>
+      </div>
+      <div class="col-md-3">
+        <label for="ap_paterno" class="form-label">Apellido paterno</label>
+        <input type="text" class="form-control" id="ap_paterno" name="ap_paterno" maxlength="60" value="{{ form.ap_paterno }}" required>
+      </div>
+      <div class="col-md-3">
+        <label for="ap_materno" class="form-label">Apellido materno</label>
+        <input type="text" class="form-control" id="ap_materno" name="ap_materno" maxlength="60" value="{{ form.ap_materno }}">
+      </div>
+      <div class="col-md-3">
+        <label for="nombres" class="form-label">Nombres</label>
+        <input type="text" class="form-control" id="nombres" name="nombres" maxlength="80" value="{{ form.nombres }}" required>
+      </div>
+
+      <div class="col-md-4">
+        <label for="id_carrera" class="form-label">Carrera</label>
+        <select class="form-select" id="id_carrera" name="id_carrera" required>
+          <option value="">Selecciona carrera</option>
+          {% for c in cat.carreras %}
+          <option value="{{ c.id_carrera }}" {{ 'selected' if form.id_carrera == c.id_carrera }}>{{ c.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="ciclo" class="form-label">Periodo de ingreso</label>
+        <select class="form-select" id="ciclo" name="ciclo" required>
+          {% for c in ciclos %}<option value="{{ c }}" {{ 'selected' if form.ciclo == c }}>{{ c|replace('-', '–') }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label for="anio" class="form-label">Año de ingreso</label>
+        <input type="number" class="form-control" id="anio" name="anio" min="2000" max="2100" value="{{ form.anio }}" required>
+      </div>
+      <div class="col-md-3">
+        <label for="semestre_calculado" class="form-label">Semestre calculado</label>
+        <input type="text" class="form-control" id="semestre_calculado" value="—" disabled
+               data-anio-actual="{{ periodo.anio if periodo }}" data-ciclo-actual="{{ periodo.ciclo if periodo }}">
+      </div>
+
+      <div class="col-md-4">
+        <fieldset><legend class="form-label fs-6">Tipo de ingreso</legend>
+          {% for t in tipos %}<div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="tipo_ingreso" id="tipo-{{ loop.index }}" value="{{ t }}" {{ 'checked' if form.tipo_ingreso == t }} required>
+            <label class="form-check-label" for="tipo-{{ loop.index }}">{{ t }}</label>
+          </div>{% endfor %}
+        </fieldset>
+      </div>
+      <div class="col-md-4">
+        <label for="estado" class="form-label">Estado escolar</label>
+        <select class="form-select" id="estado" name="estado" required>
+          {% for e in estados %}<option value="{{ e }}" {{ 'selected' if form.estado == e }}>{{ e }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 d-flex align-items-end">
+        <p class="text-muted small mb-1">Prefijos del número de control · C para cambio y T para traslado.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="seccion-ficha mb-3">
+    <h2 class="h6">Datos de acceso</h2>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label for="correo_local" class="form-label">Correo institucional</label>
+        <div class="input-group">
+          <input type="text" class="form-control" id="correo_local" name="correo_local" maxlength="60"
+                 value="{{ form.correo_local }}" data-sugerir="estudiante" required>
+          <span class="input-group-text">@zacatepec.tecnm.mx</span>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <label for="password" class="form-label">Contraseña definitiva</label>
+        <input type="password" class="form-control" id="password" name="password" minlength="8" autocomplete="new-password"
+               {{ 'required' if not actual }} placeholder="{{ 'Vacía = conservar la actual' if actual }}">
+      </div>
+      <div class="col-md-4">
+        <label for="confirmar" class="form-label">Confirmar contraseña</label>
+        <input type="password" class="form-control" id="confirmar" name="confirmar" minlength="8" autocomplete="new-password"
+               {{ 'required' if not actual }}>
+      </div>
+    </div>
+    <p class="text-muted small mt-2 mb-0">Usuario de acceso · <strong id="usuario-acceso">{{ form.matricula or '—' }}</strong></p>
+  </div>
+
+  {% with modo = 'estudiante' %}{% include 'admin/_horario_editor.html' %}{% endwith %}
+
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <button type="submit" class="btn btn-primary">Guardar estudiante</button>
+    <a href="{{ url_for('admin.estudiantes_ficha', id_estudiante=actual.id_estudiante) if actual else url_for('admin.estudiantes_nuevo') }}" class="btn btn-outline-secondary">Limpiar formulario</a>
+    {% if not actual %}<span class="text-muted small">Al guardar el alta se activa la cuenta del estudiante.</span>{% endif %}
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/horario.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ficha.js') }}"></script>
+{% endblock %}

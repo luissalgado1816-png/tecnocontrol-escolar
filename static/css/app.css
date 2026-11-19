@@ -77,3 +77,18 @@ a:hover { color: var(--principal-hover); }
   .topbar .container { flex-wrap: wrap; gap: .75rem; }
   .topbar .gap-3 { flex-wrap: wrap; }
 }
+
+/* Módulo 2 · formularios y tablas administrativos; conserva la paleta del acceso. */
+body:not(.pagina-acceso) main h1 { font-size: 1.8rem; font-weight: 700; }
+body:not(.pagina-acceso) main h2 { font-size: 1.05rem; font-weight: 700; }
+.form-select, .input-group-text { border-radius: 0; border-color: var(--borde); background-color: var(--superficie); color: var(--texto); }
+.form-select:focus { border-color: var(--principal); box-shadow: 0 0 0 .15rem #03345c33; }
+.form-check-input:checked { background-color: var(--principal); border-color: var(--principal); }
+.bloque-horario { padding: 1rem; border: 1px solid var(--borde); }
+.table { --bs-table-color: var(--texto); --bs-table-bg: var(--superficie); --bs-table-border-color: var(--borde); }
+.table thead { --bs-table-bg: var(--panel); }
+.toast { --bs-toast-bg: var(--exito-fondo); --bs-toast-color: var(--exito-texto); --bs-toast-border-color: var(--exito-borde); border-radius: 0; }
+.btn-outline-danger, .btn-danger { --bs-btn-color: var(--error-texto); --bs-btn-bg: var(--error-fondo); --bs-btn-border-color: var(--error-borde); --bs-btn-hover-bg: var(--error-texto); --bs-btn-hover-color: var(--superficie); --bs-btn-hover-border-color: var(--error-texto); }
+/* M2 · Confirmaciones de guardado; M3–M5 reutilizan este mismo aviso. */
+.aviso-exito { background: #e5f3e9; color: #20552f; border: 1px solid #91b69b; }
+.texto-acuerdo { white-space: pre-wrap; overflow-wrap: anywhere; }
