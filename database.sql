@@ -1,18 +1,18 @@
 
 SET NAMES utf8mb4;
--- oooojjjjjjooooo borra toda la base de datos
+-- Precaución: reinicia la base de datos completa en entorno de desarrollo
 DROP DATABASE IF EXISTS tecnocontrol_escolar;
 CREATE DATABASE tecnocontrol_escolar CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE tecnocontrol_escolar;
 
--- 1. CATALOGO DE ROLES
+-- 1. CATALOGO DE ROLES (recibe datos desde "Insercion de roles" en semilladml)
 CREATE TABLE roles (
     id_rol INT AUTO_INCREMENT PRIMARY KEY,
     codigo_rol VARCHAR(30) NOT NULL UNIQUE,
     nombre_actor VARCHAR(40) NOT NULL UNIQUE
 ) ENGINE=InnoDB;
 
--- 2. CATALOGO DE PERIODOS ESCOLARES
+-- 2. CATALOGO DE PERIODOS ESCOLARES (recibe datos desde "Inserccion de periodos_escolares" en semilladml)
 CREATE TABLE periodos_escolares (
     id_periodo INT AUTO_INCREMENT PRIMARY KEY,
     anio SMALLINT NOT NULL,
@@ -24,7 +24,7 @@ CREATE TABLE periodos_escolares (
     CONSTRAINT ck_periodo_es_actual CHECK (es_actual IN (0, 1))
 ) ENGINE=InnoDB;
 
--- 3. CATALOGO DE BLOQUES HORARIOS
+-- 3. CATALOGO DE BLOQUES HORARIOS(recibe datos desde "Inserccion de tabla bloques_horarios" en semilladml)
 CREATE TABLE bloques_horarios (
     id_bloque INT AUTO_INCREMENT PRIMARY KEY,
     hora_inicio TIME NOT NULL,
@@ -37,13 +37,13 @@ CREATE TABLE bloques_horarios (
     )
 ) ENGINE=InnoDB;
 
--- 4. DEPARTAMENTOS ACADEMICOS
+-- 4. DEPARTAMENTOS (recibe datos desde "Inserccion departamentos" en semilladml)
 CREATE TABLE departamentos (
     id_departamento INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL UNIQUE
 ) ENGINE=InnoDB;
 
--- 5. CARRERAS
+-- 5. CARRERAS (recibe datos desde "Inserccion carreras" en semilladml)
 CREATE TABLE carreras (
     id_carrera INT AUTO_INCREMENT PRIMARY KEY,
     clave_oficial VARCHAR(20) NOT NULL UNIQUE,
@@ -51,7 +51,7 @@ CREATE TABLE carreras (
     activa TINYINT(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB;
 
--- 6. CATALOGO DE MATERIAS
+-- 6. CATALOGO DE MATERIAS (recibe datos desde "Inserccion materias" en semilladml)
 CREATE TABLE materias (
     id_materia INT AUTO_INCREMENT PRIMARY KEY,
     clave_oficial VARCHAR(20) NOT NULL UNIQUE,
@@ -62,7 +62,7 @@ CREATE TABLE materias (
     CONSTRAINT ck_mat_semestre CHECK (semestre_sugerido BETWEEN 1 AND 12)
 ) ENGINE=InnoDB;
 
--- 7. RELACION CARRERA - MATERIA (N:M)
+-- 7. RELACION CARRERA - MATERIA (N:M) (recibe datos desde "Inserccion carrera_metaria" en semilladml)
 CREATE TABLE carrera_materia (
     id_carrera INT NOT NULL,
     id_materia INT NOT NULL,
@@ -71,7 +71,7 @@ CREATE TABLE carrera_materia (
     CONSTRAINT fk_cm_materia FOREIGN KEY (id_materia) REFERENCES materias(id_materia) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 8. CUENTAS DE USUARIO
+-- 8. CUENTAS DE USUARIO (recibe datos desde "Ingresar usuarios con contraseña hash" en semilladml)
 CREATE TABLE usuarios (
     id_usuario INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -84,6 +84,7 @@ CREATE TABLE usuarios (
 ) ENGINE=InnoDB;
 
 -- 9. ESTUDIANTES (el semestre se calcula en la vista v_estudiantes_semestre)
+-- (recibe datos desde "Insertar estudiantes" en semilladml)
 CREATE TABLE estudiantes (
     id_estudiante INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT NOT NULL UNIQUE,
@@ -100,7 +101,7 @@ CREATE TABLE estudiantes (
     CONSTRAINT fk_est_periodo FOREIGN KEY (id_periodo_ingreso) REFERENCES periodos_escolares(id_periodo)
 ) ENGINE=InnoDB;
 
--- 10. DOCENTES Y TUTORES
+-- 10. DOCENTES Y TUTORES (recibe datos desde "Insertar docentes" en semilladml)
 CREATE TABLE docentes (
     id_docente INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT NOT NULL UNIQUE,
@@ -118,6 +119,7 @@ CREATE TABLE docentes (
 ) ENGINE=InnoDB;
 
 -- 11. PERFIL DE ASESORIAS (materias autorizadas al tutor por Coordinacion)
+-- (recibe datos desde "Insertar tutor_materias" en semilladml)
 CREATE TABLE tutor_materias (
     id_docente INT NOT NULL,
     id_materia INT NOT NULL,
@@ -126,7 +128,8 @@ CREATE TABLE tutor_materias (
     CONSTRAINT fk_tm_materia FOREIGN KEY (id_materia) REFERENCES materias(id_materia) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 12A. HORARIO BASE DE ESTUDIANTE
+-- 12A. HORARIO BASE DE ESTUDIANTE (recibe datos desde "Insertar horario_estudiante" en semilladml)
+-- segunda carga recibe datos desde "Continuacion de la carga para la tabla horario_estudiante" en semilladml)
 CREATE TABLE horario_estudiante (
     id_horario_est INT AUTO_INCREMENT PRIMARY KEY,
     id_estudiante INT NOT NULL,
@@ -139,7 +142,7 @@ CREATE TABLE horario_estudiante (
     CONSTRAINT uq_est_dia_blq UNIQUE (id_estudiante, dia_semana, id_bloque)
 ) ENGINE=InnoDB;
 
--- 12B. HORARIO BASE DE DOCENTE
+-- 12B. HORARIO BASE DE DOCENTE (recibe datos desde "Inserccion datos horario_docente" en semilladml)
 CREATE TABLE horario_docente (
     id_horario_doc INT AUTO_INCREMENT PRIMARY KEY,
     id_docente INT NOT NULL,
@@ -153,7 +156,7 @@ CREATE TABLE horario_docente (
     CONSTRAINT uq_doc_dia_blq UNIQUE (id_docente, dia_semana, id_bloque)
 ) ENGINE=InnoDB;
 
--- 13. FRANJAS DE ASESORIA PUBLICADAS
+-- 13. FRANJAS DE ASESORIA PUBLICADAS (recibe datos desde "Inserccion Franjas_asesorias, correccion de agotado" en semilladml)
 CREATE TABLE franjas_asesoria (
     id_franja INT AUTO_INCREMENT PRIMARY KEY,
     id_docente INT NOT NULL,
@@ -171,7 +174,7 @@ CREATE TABLE franjas_asesoria (
     INDEX idx_fa_materia_fecha (id_materia, fecha)
 ) ENGINE=InnoDB;
 
--- 14. RESERVAS DE ASESORIA
+-- 14. RESERVAS DE ASESORIA (recibe datos desde "Inserccion reserva_asesoria" en semilladml)
 CREATE TABLE reservas_asesoria (
     id_reserva INT AUTO_INCREMENT PRIMARY KEY,
     id_franja INT NOT NULL,
@@ -191,7 +194,7 @@ CREATE TABLE reservas_asesoria (
         OR (tipo_cita = 'Seguimiento' AND id_reserva_origen IS NOT NULL)
     )
 ) ENGINE=InnoDB;
-
+-- 
 -- 15. ACUERDOS TUTORIALES
 CREATE TABLE acuerdos (
     id_acuerdo INT AUTO_INCREMENT PRIMARY KEY,

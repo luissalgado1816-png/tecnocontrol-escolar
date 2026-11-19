@@ -1,20 +1,21 @@
 USE tecnocontrol_escolar;
 
 SET NAMES utf8mb4;
--- Insercion hacia la tabla roles
+
+-- Insercion de roles, (Poblado hacia "1. CATALOGO DE ROLES en database")
 INSERT INTO roles (codigo_rol, nombre_actor) VALUES
 ('admin_escolar', 'Administrador Escolar'),
 ('coordinador_tutorias', 'Coordinador de Tutorías'),
 ('consulta_seguimiento', 'Tutor'),
 ('consulta_seguimiento_est', 'Estudiante');
 
--- Inserccion hacia la tabla periodos_escolares
+-- Inserccion de periodos_escolares (Poblado hacia "2. CATALOGO DE PERIODOS ESCOLARES en database")
 INSERT INTO periodos_escolares (anio, ciclo, es_actual) VALUES
 (2022, 'Agosto-Diciembre', 0),
 (2026, 'Enero-Junio', 0),
 (2026, 'Agosto-Diciembre', 1);
 
--- Inserccion hacia la tabla bloques_horarios
+-- Inserccion de tabla bloques_horarios (Poblado hacia "3. CATALOGO DE BLOQUES HORARIOS en database")
 INSERT INTO bloques_horarios (hora_inicio, hora_fin, etiqueta) VALUES
 ('07:00:00', '08:00:00', '07:00-08:00'),
 ('08:00:00', '09:00:00', '08:00-09:00'),
@@ -29,18 +30,18 @@ INSERT INTO bloques_horarios (hora_inicio, hora_fin, etiqueta) VALUES
 ('17:00:00', '18:00:00', '17:00-18:00'),
 ('18:00:00', '19:00:00', '18:00-19:00');
 
--- Inserccion departamentos
+-- Inserccion departamentos  (Poblado hacia "4. DEPARTAMENTOS en database")
 INSERT INTO departamentos (nombre) VALUES
 ('Sistemas y Computación'),
 ('Ciencias Básicas'),
 ('Ingeniería Industrial');
 
--- Inserccion carreras
+-- Inserccion carreras (Poblado hacia "5. CARRERAS en database")
 INSERT INTO carreras (clave_oficial, nombre) VALUES
 ('ISIC-2010-224', 'Ingeniería en Sistemas Computacionales'),
 ('IIND-2010-227', 'Ingeniería Industrial');
 
--- Inserccion materias
+-- Inserccion materias (Poblado hacia "6. CATALOGO DE MATERIAS en database")
 INSERT INTO materias (clave_oficial, nombre, id_departamento, semestre_sugerido) VALUES
 ('ACF-0901', 'Cálculo Diferencial', 2, 1),
 ('ACF-0902', 'Cálculo Integral', 2, 2),
@@ -53,12 +54,12 @@ INSERT INTO materias (clave_oficial, nombre, id_departamento, semestre_sugerido)
 ('SCC-1010', 'Graficación', 1, 5),
 ('CCD-2401', 'Fund. de Ciencia de Datos', 1, 8);
 
--- Inserccion carrera_metaria
+-- Inserccion carrera_metaria (Poblado hacia "7. RELACION CARRERA - MATERIA (N:M) en database")
 INSERT INTO carrera_materia (id_carrera, id_materia) VALUES
 (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9), (1, 10),
 (2, 1), (2, 2);
 
--- Ingresar usuarios con contraseña hash
+-- Ingresar usuarios con contraseña hash (Poblado hacia "8. CUENTAS DE USUARIO en database")
 INSERT INTO usuarios (username, password_hash, id_rol, correo_institucional, activo) VALUES
 ('adminescolar0001', 'scrypt:32768:8:1$eCh1mgbCQsuHP42J$2b45e87687436c2a08000f83a457325cf0352bac20e9d914097b5f34a71708fb41d3f820c2a22f555e6d05fdab80d9fe0b2bb41ca8928c1000ad82eb7cf78a9b', 1, 'admin.escolar@zacatepec.tecnm.mx', 1),
 ('coordinadortutoria0001', 'scrypt:32768:8:1$8sb34XnVXEzyJNjq$d33ba2a986e1d9f5ef508d54f2abd9a7e2226cb1aaf0382c29758ca36f45c9cc084f5385ac9e4ffb9c0849ccb41bdd4ce0648a6da5040eeab3ed8fc5971b11f8', 2, 'tutorias@zacatepec.tecnm.mx', 1),
@@ -70,25 +71,26 @@ INSERT INTO usuarios (username, password_hash, id_rol, correo_institucional, act
 ('26090022', 'scrypt:32768:8:1$zOKMb2XW4IO9gl4O$56074ac4a9296f08ae10897bcb84cada0961686a35306ecf2e1c3aa3d9243148b2fae184236c723e7ee5903624b2efcc75276e0469a7dafa988962176d6e4fab', 4, 'L26090022@zacatepec.tecnm.mx', 1),
 ('26090023', 'scrypt:32768:8:1$FdwEaUPcploKjB1K$a369a485123a471aec8a13e7f2a62f943651c00a4596672a52c63b7571e70dcc88cb8abdadc4fffa460f82e1d2d39ab058e1853c64be0030b0932bc0a13d75c2', 4, 'L26090023@zacatepec.tecnm.mx', 1);
 
--- Insertar docentes
+-- Insertar docentes (Poblado hacia "10. DOCENTES Y TUTORES en database")
 INSERT INTO docentes (id_usuario, clave_docente, apellido_paterno, apellido_materno, nombres, grado_academico, estado_laboral, id_departamento, habilitado_tutor) VALUES
 (3, 'DOC-104', 'Vargas', 'León', 'Daniel', 'Mtro.', 'Activo', 1, 1),
 (4, 'DOC-101', 'Vega', 'Soto', 'Julián', 'Mtro.', 'Activo', 2, 1),
 (5, 'DOC-102', 'León', 'Ruiz', 'Sara', 'Mtra.', 'Activo', 2, 1),
 (6, 'DOC-103', 'Santos', 'Cruz', 'David', 'Dr.', 'Investigación', 1, 0);
 
+-- Insertar tutor_materias (Poblado hacia "11. PERFIL DE ASESORIAS")
 INSERT INTO tutor_materias (id_docente, id_materia) VALUES
 (1, 5),
 (2, 1),
 (3, 2);
 
--- Insertar estudiantes
+-- Insertar estudiantes (Poblado hacia "9. ESTUDIANTES" en database)
 INSERT INTO estudiantes (id_usuario, matricula, apellido_paterno, apellido_materno, nombres, id_carrera, id_periodo_ingreso, tipo_ingreso, estado) VALUES
 (7, '22090748', 'Salgado', 'Rivera', 'Luis Ivan', 1, 1, 'Regular', 'Inscrito'),
 (8, '26090022', 'Cruz', 'Luna', 'Renata', 1, 3, 'Regular', 'Inscrito'),
 (9, '26090023', 'Vera', 'Díaz', 'Miguel', 1, 3, 'Regular', 'Inscrito');
 
--- Insertar horario_estudiante
+-- Insertar horario_estudiante (Poblado hacia "12A. HORARIO BASE DE ESTUDIANTE" en database)
 INSERT INTO horario_estudiante (id_estudiante, id_materia, dia_semana, id_bloque) VALUES
 (1, 6, 'Lunes', 1), (1, 6, 'Lunes', 2),
 (1, 7, 'Lunes', 3), (1, 7, 'Lunes', 4),
@@ -104,23 +106,24 @@ INSERT INTO horario_estudiante (id_estudiante, id_materia, dia_semana, id_bloque
 (1, 5, 'Viernes', 1), (1, 5, 'Viernes', 2),
 (1, 8, 'Viernes', 3), (1, 8, 'Viernes', 4);
 
--- Continuacion de la carga para la tabla horario_estudiante
+-- Continuacion de la carga para la tabla horario_estudiante (Poblado hacia "12A. HORARIO BASE DE ESTUDIANTE" en database)
 INSERT INTO horario_estudiante (id_estudiante, id_materia, dia_semana, id_bloque) VALUES
 (2, 5, 'Martes', 1), (2, 5, 'Martes', 2), (2, 5, 'Miércoles', 2), (2, 5, 'Viernes', 1), (2, 5, 'Viernes', 2),
 (3, 5, 'Martes', 1), (3, 5, 'Martes', 2), (3, 5, 'Miércoles', 2), (3, 5, 'Viernes', 1), (3, 5, 'Viernes', 2);
 
--- Inserccion datos horario_docente
+-- Inserccion datos horario_docente (Poblado hacia "12B. HORARIO BASE DE DOCENTE" en database)
 INSERT INTO horario_docente (id_docente, id_carrera, id_materia, dia_semana, id_bloque) VALUES
 (1, 1, 3, 'Lunes', 1),
 (1, 1, 3, 'Miércoles', 3);
 
--- Franjas_asesorias, correccion de agotado
+-- Inserccion Franjas_asesorias, correccion de agotado (Poblado hacia "13. FRANJAS DE ASESORIA PUBLICADAS" en database)
 INSERT INTO franjas_asesoria (id_docente, id_carrera, id_materia, fecha, id_bloque, cupo_maximo, estado) VALUES
 (1, 1, 5, '2026-11-20', 5, 10, 'Publicada'),
 (1, 1, 5, '2026-11-24', 6, 10, 'Publicada'),
 (1, 1, 5, '2026-11-25', 5, 10, 'Publicada');
-
+-- Inserccion reserva_asesoria
 -- Ivan pasa de 'Realizada' a 'Programada': la franja es el 20/11/2026 y aún no ocurre
+-- (Poblado hacia "14. RESERVAS DE ASESORIA" en database)
 INSERT INTO reservas_asesoria (id_franja, id_estudiante, tipo_cita, estado_cita) VALUES
 (1, 2, 'Inicial', 'Programada'),
 (1, 3, 'Inicial', 'Programada');
