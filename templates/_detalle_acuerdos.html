@@ -1,0 +1,8 @@
+{% for r in filas if r.id_acuerdo %}
+<section class="bloque-horario mt-3" aria-label="Acuerdo de la cita {{ r.id_reserva }}">
+  <h2 class="h6">{{ 'Acuerdo en seguimiento' if r.estado_acuerdo == 'En seguimiento' else 'Acuerdo cerrado' }}</h2>
+  <p class="text-muted mb-2">{{ r.fecha|fecha_dia }} · {{ r.horario|bloque }} · {{ r.materia }}</p>
+  <p class="texto-acuerdo">{{ r.descripcion_acuerdo }}</p>
+  {% if r.siguiente_id %}<p class="mb-0">Próxima asesoría · {{ r.siguiente_fecha|fecha_dia }} · {{ r.siguiente_horario|bloque }} · {{ r.docente }}</p>{% endif %}
+</section>
+{% endfor %}

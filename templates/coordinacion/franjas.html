@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block titulo %}Franjas de asesoría · TecnoControl Escolar{% endblock %}
+{% block contenido %}
+<h1 class="h4 mb-3">Franjas de asesoría</h1>
+{% include '_errores.html' %}
+<form method="post" id="form-franjas" data-opciones="{{ url_for('coordinacion.franjas_opciones') }}">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="row g-3 mb-3">
+    <div class="col-md-4"><label class="form-label" for="docente">Tutor habilitado</label><select id="docente" name="docente" class="form-select" required>
+      <option value="">Selecciona tutor</option>{% for d in tutores %}<option value="{{ d.id_docente }}" {{ 'selected' if form.docente == d.id_docente|string }}>{{ d.nombre }}</option>{% endfor %}</select></div>
+    <div class="col-md-4"><label class="form-label" for="carrera">Carrera</label><select id="carrera" name="carrera" class="form-select" required>
+      <option value="">Selecciona carrera</option>{% for c in carreras %}<option value="{{ c.id_carrera }}" {{ 'selected' if form.carrera == c.id_carrera|string }}>{{ c.nombre }}</option>{% endfor %}</select></div>
+    <div class="col-md-4"><label class="form-label" for="materia">Materia autorizada</label><select id="materia" name="materia" class="form-select" required>
+      <option value="">Selecciona materia</option>{% for m in materias %}<option value="{{ m.id_materia }}" {{ 'selected' if form.materia == m.id_materia|string }}>{{ m.nombre }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="row g-3 align-items-end mb-3">
+    <div class="col-md-3"><label for="fecha" class="form-label">Fecha</label><input class="form-control" type="date" name="fecha" id="fecha" value="{{ form.fecha }}" required></div>
+    <div class="col-md-2"><label for="dia" class="form-label">Día</label><input class="form-control" id="dia" value="{{ dia }}" readonly></div>
+    <div class="col-md-3"><label for="bloque" class="form-label">Horario disponible</label><select class="form-select" id="bloque" name="bloque" required>
+      <option value="">Selecciona bloque</option>{% for b in bloques %}<option value="{{ b.id_bloque }}" {{ 'selected' if form.bloque == b.id_bloque|string }}>{{ b.etiqueta|bloque }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><label for="cupo" class="form-label">Cupo máximo</label><input id="cupo" class="form-control" value="10" readonly></div>
+    <div class="col-md-2"><button class="btn btn-primary w-100">Publicar franja</button></div>
+  </div>
+  <p class="text-muted">Bloques de una hora libres de clases y de otras franjas del tutor en la fecha elegida.</p>
+  <div id="aviso-opciones" class="alert alert-warning d-none mb-3" role="status"></div>
+</form>
+<h2 class="h6 mt-4">Franjas publicadas</h2>
+<div class="table-responsive"><table class="table align-middle">
+  <thead><tr><th>Día</th><th>Fecha</th><th>Horario</th><th>Tutor</th><th>Materia</th><th>Carrera</th><th>Reservas</th><th>Estado</th></tr></thead>
+  <tbody>{% for f in filas %}<tr><td>{{ (f.fecha|fecha_dia).split(' ')[0] }}</td><td>{{ f.fecha|fecha }}</td><td>{{ f.horario|bloque }}</td><td>{{ f.docente }}</td><td>{{ f.materia }}</td><td>{{ f.carrera }}</td><td>{{ f.reservas_activas }} de 10</td><td>{{ f.estado_visible }}</td></tr>
+    {% else %}<tr><td colspan="8">Aún no hay franjas publicadas.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static',filename='js/franjas.js') }}"></script>{% endblock %}

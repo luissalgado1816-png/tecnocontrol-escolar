@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block titulo %}Perfil de asesorías · TecnoControl Escolar{% endblock %}
+{% block contenido %}
+<h1 class="h4 mb-3">Perfil de asesorías</h1>
+{% include '_errores.html' %}
+<form method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="row g-3 mb-3">
+    {% for etiqueta,valor,col in [('Clave docente',docente.clave_docente,2),('Docente',docente.nombre,4),('Grado académico',docente.grado_academico,2),('Estado laboral',docente.estado_laboral,4)] %}
+    <div class="col-md-{{ col }}"><label class="form-label" for="dato-{{ loop.index }}">{{ etiqueta }}</label><input id="dato-{{ loop.index }}" class="form-control" value="{{ valor }}" readonly></div>
+    {% endfor %}
+  </div>
+  <div class="form-check mb-4"><input class="form-check-input" id="habilitado" name="habilitado" type="checkbox" value="1" {{ 'checked' if habilitar }} {{ 'disabled' if docente.estado_laboral != 'Activo' }}>
+    <label class="form-check-label" for="habilitado">Habilitar como tutor</label></div>
+  <div class="row mb-3"><div class="col-md-6"><label class="form-label" for="departamento">Departamento</label><input id="departamento" class="form-control" value="{{ docente.departamento }}" readonly></div></div>
+  <p class="text-muted">Se muestran las materias autorizadas para el departamento.</p>
+  <fieldset class="mb-3"><legend class="h6">Materias que puede asesorar</legend>
+    <div class="row g-2">{% for m in materias %}<div class="col-md-6"><div class="form-check">
+      <input class="form-check-input" type="checkbox" name="materias" id="materia-{{ m.id_materia }}" value="{{ m.id_materia }}" {{ 'checked' if m.id_materia in seleccionadas }} {{ 'disabled' if docente.estado_laboral != 'Activo' }}>
+      <label class="form-check-label" for="materia-{{ m.id_materia }}">{{ m.nombre }}</label>
+    </div></div>{% else %}<p>No hay materias registradas para este departamento.</p>{% endfor %}</div>
+  </fieldset>
+  <p class="text-muted">El perfil puede incluir materias del departamento fuera de su horario actual.</p>
+  <button class="btn btn-primary" {{ 'disabled' if docente.estado_laboral != 'Activo' }}>Guardar perfil</button>
+  <a class="btn btn-outline-secondary" href="{{ url_for('coordinacion.tutores') }}">Volver a Tutores</a>
+</form>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block titulo %}Tutores · TecnoControl Escolar{% endblock %}
+{% block contenido %}
+<h1 class="h4 mb-3">Tutores</h1>
+<form method="get" class="row g-3 align-items-end mb-4">
+  {% for campo,etiqueta in [('clave','Clave docente'),('paterno','Apellido paterno'),('materno','Apellido materno'),('nombres','Nombres')] %}
+  <div class="col-md"><label class="form-label" for="{{ campo }}">{{ etiqueta }}</label>
+    <input class="form-control" id="{{ campo }}" name="{{ campo }}" value="{{ filtros[campo] }}" maxlength="80"></div>
+  {% endfor %}
+  <div class="col-md-auto"><button class="btn btn-primary">Buscar</button> <a class="btn btn-outline-secondary" href="{{ url_for('coordinacion.tutores') }}">Limpiar</a></div>
+</form>
+<div class="table-responsive"><table class="table align-middle">
+  <thead><tr><th>Clave</th><th>Docente</th><th>Grado</th><th>Departamento</th><th>Estado laboral</th><th>Tutor habilitado</th><th>Perfil de asesorías</th></tr></thead>
+  <tbody>{% for d in filas %}<tr>
+    <td>{{ d.clave_docente }}</td><td>{{ d.nombre }}</td><td>{{ d.grado_academico }}</td><td>{{ d.departamento }}</td><td>{{ d.estado_laboral }}</td><td>{{ 'Sí' if d.habilitado_tutor else 'No' }}</td>
+    <td>{% if d.estado_laboral == 'Activo' %}<a class="btn btn-sm btn-outline-primary" href="{{ url_for('coordinacion.perfil',id_docente=d.id_docente) }}">{{ 'Abrir perfil' if d.habilitado_tutor else 'Preparar perfil' }}</a>
+      {% else %}<button class="btn btn-sm btn-primary" disabled>No elegible</button>{% endif %}</td>
+  </tr>{% else %}<tr><td colspan="7">No se encontraron docentes con esos filtros.</td></tr>{% endfor %}</tbody>
+</table></div>
+<p class="text-muted">Solo se puede habilitar como tutor a un docente activo.</p>
+{% endblock %}

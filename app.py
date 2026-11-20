@@ -6,6 +6,7 @@ import pymysql
 from flask import Flask, abort, g, render_template, request, session
 
 import db
+import reglas
 from auth import bp as auth_bp
 from config import Config
 from modulos.admin import bp as admin_bp
@@ -42,6 +43,7 @@ def create_app(config=None):
     app.config.from_object(Config)
     if config:
         app.config.update(config)
+    reglas.registrar_filtros(app)
 
     # Cierra conexion a BD al terminar cada peticion y registra blueprints
     app.teardown_appcontext(db.close_db)
@@ -91,7 +93,8 @@ def create_app(config=None):
         if g.get("user"):
             actual = request.endpoint or ""
             for etiqueta, endpoint in MENU.get(g.user["codigo_rol"], []):
-                pestanas.append((etiqueta, endpoint, actual.startswith(endpoint)))
+                activa = actual.startswith(endpoint) or (actual == 'coordinacion.perfil' and endpoint == 'coordinacion.tutores')
+                pestanas.append((etiqueta, endpoint, activa))
         return {"csrf_token": csrf_token, "pestanas": pestanas}
 
     # Manejadores personalizados de errores HTTP y de MariaDB
