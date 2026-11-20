@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block titulo %}Mis franjas · TecnoControl Escolar{% endblock %}
+{% block contenido %}
+<h1 class="h4 mb-3">Mis franjas</h1>
+{% include '_errores.html' %}
+<form method="get" class="row g-3 align-items-end mb-4">
+  <div class="col-md-3"><label class="form-label" for="fecha">Fecha</label><input class="form-control" type="date" id="fecha" name="fecha" value="{{ fecha }}" required></div>
+  <div class="col-md-auto"><button class="btn btn-primary">Consultar</button></div>
+</form>
+<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Fecha</th><th>Horario</th><th>Materia</th><th>Reservas</th><th>Estudiantes</th></tr></thead>
+<tbody>{% for f in filas %}<tr><td>{{ f.fecha|fecha }}</td><td>{{ f.horario|bloque }}</td><td>{{ f.materia }}</td><td>{{ f.reservas_activas }} de 10</td>
+<td><a class="btn btn-primary btn-sm" href="{{ url_for('tutor.franjas',fecha=fecha,franja=f.id_franja) }}">Ver estudiantes</a></td></tr>
+{% else %}<tr><td colspan="5">No hay franjas para la fecha seleccionada.</td></tr>{% endfor %}</tbody></table></div>
+{% if elegida %}
+<h2 class="h6 mt-4">Estudiantes del {{ elegida.fecha|fecha }} · {{ elegida.horario|bloque }}</h2>
+<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Número de control</th><th>Estudiante</th><th>Estado</th><th>Acción</th></tr></thead>
+<tbody>{% for r in citas %}<tr><td>{{ r.matricula }}</td><td>{{ r.estudiante }}</td><td>{{ r.estado_cita }}</td><td>
+{% if r.id_acuerdo or r.estado_cita in ['Programada','Realizada'] %}<a class="btn btn-primary btn-sm" href="{{ url_for('tutor.acuerdo',id_reserva=r.id_reserva) }}">{{ 'Ver acuerdo' if r.id_acuerdo else 'Registrar atención' }}</a>
+{% else %}<button class="btn btn-secondary btn-sm" disabled>{{ r.estado_cita }}</button>{% endif %}</td></tr>
+{% else %}<tr><td colspan="4">Aún no hay estudiantes con reserva en esta franja.</td></tr>{% endfor %}</tbody></table></div>
+{% endif %}
+{% endblock %}

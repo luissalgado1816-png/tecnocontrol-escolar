@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block titulo %}Acuerdo y seguimiento · TecnoControl Escolar{% endblock %}
+{% block contenido %}
+<h1 class="h4 mb-4">Acuerdo y seguimiento</h1>
+{% include '_errores.html' %}
+<dl class="row g-2 mb-4">
+  <dt class="col-md-3">Número de control</dt><dd class="col-md-9">{{ cita.matricula }}</dd>
+  <dt class="col-md-3">Estudiante</dt><dd class="col-md-9">{{ cita.estudiante }}</dd>
+  <dt class="col-md-3">Materia</dt><dd class="col-md-9">{{ cita.materia }}</dd>
+  <dt class="col-md-3">Franja atendida</dt><dd class="col-md-9">{{ cita.fecha|fecha }} · {{ cita.horario|bloque }}</dd>
+</dl>
+{% if cita.id_acuerdo %}
+<div class="form-check mb-3"><input id="realizada" class="form-check-input" type="checkbox" checked disabled><label for="realizada" class="form-check-label">Marcar atención como realizada</label></div>
+<h2 class="h6">Acuerdo individual · {{ cita.estado_acuerdo }}</h2>
+<p class="texto-acuerdo bloque-horario">{{ cita.descripcion_acuerdo }}</p>
+{% if cita.siguiente_id %}<p>{{ 'Próxima asesoría' if cita.siguiente_estado == 'Programada' else 'Cita de seguimiento' }} · {{ cita.siguiente_fecha|fecha_dia }} · {{ cita.siguiente_horario|bloque }}{% if cita.siguiente_estado != 'Programada' %} · {{ cita.siguiente_estado }}{% endif %}</p>{% endif %}
+<a class="btn btn-outline-secondary" href="{{ url_for('tutor.franjas',fecha=cita.fecha|string,franja=cita.id_franja) }}">Volver a Mis franjas</a>
+{% else %}
+<form method="post" id="form-acuerdo">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="form-check mb-3"><input id="realizada" class="form-check-input" name="realizada" value="1" type="checkbox" {{ 'checked' if form.realizada == '1' }} required><label for="realizada" class="form-check-label">Marcar atención como realizada</label></div>
+  <label class="form-label" for="descripcion">Acuerdo individual</label>
+  <textarea class="form-control mb-4" id="descripcion" name="descripcion" rows="4" maxlength="10000" required>{{ form.descripcion }}</textarea>
+  <fieldset class="mb-3"><legend class="h6">Decisión de seguimiento</legend>
+    <div class="d-flex gap-4 flex-wrap">
+      <div class="form-check"><input id="cerrar" class="form-check-input" name="decision" type="radio" value="cerrar" {{ 'checked' if form.decision != 'seguir' }}><label class="form-check-label" for="cerrar">Cerrar acuerdo</label></div>
+      <div class="form-check"><input id="seguir" class="form-check-input" name="decision" type="radio" value="seguir" {{ 'checked' if form.decision == 'seguir' }}><label class="form-check-label" for="seguir">Agendar seguimiento</label></div>
+    </div>
+  </fieldset>
+  <label class="form-label" for="franja">Franja de seguimiento</label>
+  <select class="form-select mb-2" id="franja" name="franja" aria-describedby="ayuda-seguimiento" {{ 'disabled' if form.decision != 'seguir' }} {{ 'required' if form.decision == 'seguir' }}>
+    <option value="">Selecciona una franja</option>{% for f in opciones %}<option value="{{ f.id_franja }}" {{ 'selected' if form.franja == f.id_franja|string }}>{{ f.fecha|fecha_dia }} · {{ f.horario|bloque }} · {{ f.materia }} · {{ f.lugares_libres }} de 10 lugares libres</option>{% endfor %}
+  </select>
+  <p class="text-muted mb-4" id="ayuda-seguimiento">{{ 'Solo aparecen franjas posteriores del mismo tutor compatibles con sus clases y con cupo.' if opciones else 'No hay franjas de seguimiento compatibles y con cupo. Coordinación puede publicar otra franja.' }}</p>
+  <div class="d-flex gap-3 flex-wrap"><button class="btn btn-primary">Guardar acuerdo</button><a class="btn btn-outline-secondary" href="{{ url_for('tutor.franjas',fecha=cita.fecha|string,franja=cita.id_franja) }}">Volver a Mis franjas</a></div>
+</form>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static',filename='js/seguimiento.js') }}"></script>{% endblock %}

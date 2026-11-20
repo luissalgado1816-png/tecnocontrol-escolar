@@ -1,4 +1,4 @@
-# Reglas compartidas de validacion y coherencia de datos (Modulos 2, 3 y 4)
+# Reglas compartidas de validacion y coherencia de datos (Modulos 2, 3, 4 y 5)
 from datetime import date, datetime, timedelta
 import re
 import db
@@ -182,6 +182,7 @@ def rango_reporte(args):
 
 
 # Consulta compartida del historial, acuerdos y cita de seguimiento vinculada
+# Modulo 5: incluye el estado del seguimiento para mostrar su situacion actual.
 CONSULTA_CITAS = '''
  SELECT r.id_reserva, r.id_franja, r.id_estudiante, r.tipo_cita, r.id_reserva_origen, r.estado_cita,
  e.matricula, CONCAT_WS(' ', e.nombres, e.apellido_paterno, e.apellido_materno) AS estudiante,
@@ -189,7 +190,8 @@ CONSULTA_CITAS = '''
  c.nombre AS carrera, m.nombre AS materia,
  CONCAT_WS(' ', d.nombres, d.apellido_paterno, d.apellido_materno) AS docente,
  a.id_acuerdo, a.descripcion_acuerdo, a.estado_acuerdo,
- s.id_reserva AS siguiente_id, sf.fecha AS siguiente_fecha, sb.etiqueta AS siguiente_horario
+ s.id_reserva AS siguiente_id, s.estado_cita AS siguiente_estado,
+ sf.fecha AS siguiente_fecha, sb.etiqueta AS siguiente_horario
  FROM reservas_asesoria r
  JOIN estudiantes e ON e.id_estudiante = r.id_estudiante
  JOIN franjas_asesoria f ON f.id_franja = r.id_franja
@@ -320,3 +322,4 @@ def oferta_estudiante(estudiante, id_materia=None, id_docente=None, posterior=No
         franja['lugares_libres'] = libres
         salida.append(franja)
     return salida
+

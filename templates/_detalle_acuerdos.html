@@ -3,6 +3,6 @@
   <h2 class="h6">{{ 'Acuerdo en seguimiento' if r.estado_acuerdo == 'En seguimiento' else 'Acuerdo cerrado' }}</h2>
   <p class="text-muted mb-2">{{ r.fecha|fecha_dia }} · {{ r.horario|bloque }} · {{ r.materia }}</p>
   <p class="texto-acuerdo">{{ r.descripcion_acuerdo }}</p>
-  {% if r.siguiente_id %}<p class="mb-0">Próxima asesoría · {{ r.siguiente_fecha|fecha_dia }} · {{ r.siguiente_horario|bloque }} · {{ r.docente }}</p>{% endif %}
+  {% if r.siguiente_id %}<p class="mb-0">{{ 'Próxima asesoría' if r.siguiente_estado == 'Programada' else 'Cita de seguimiento' }} · {{ r.siguiente_fecha|fecha_dia }} · {{ r.siguiente_horario|bloque }} · {{ r.docente }}{% if r.siguiente_estado != 'Programada' %} · {{ r.siguiente_estado }}{% endif %}</p>{% endif %}
 </section>
 {% endfor %}

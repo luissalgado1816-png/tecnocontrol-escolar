@@ -8,11 +8,13 @@ Proyecto académico de un sistema web para la gestión de asesorías escolares d
 | --- | --- | --- |
 | 1 | Inicio y cierre de sesión, acceso por perfil y restablecimiento de contraseña | Implementado |
 | 2 | Administración de estudiantes y docentes, fichas y horarios base | Implementado |
-| 3 | Coordinación de Tutorías: habilitación, perfiles, franjas, historial y reporte general | Integrado; pendiente de comprobación funcional con MariaDB en el equipo de demostración |
-| 4 | Reservas e historial del estudiante | Implementado; pendiente de comprobación funcional con MariaDB en el equipo de demostración |
-| 5 | Atención, acuerdos, seguimiento y reporte del tutor | Pendiente de incorporar |
+| 3 | Coordinación de Tutorías: habilitación, perfiles, franjas, historial y reporte general | Implementado |
+| 4 | Reservas e historial del estudiante | Implementado |
+| 5 | Atención, acuerdos, seguimiento y reporte del tutor | Implementado |
 
-Esta versión contiene los módulos 1, 2, 3 y 4. El estudiante dispone de oferta de asesorías, confirmación de reserva y consulta de su historial. Las funciones de atención, registro de acuerdos, seguimiento y reporte del tutor quedan pendientes del módulo 5.
+Esta versión contiene los módulos 1, 2, 3, 4 y 5. Incluye el acceso por perfil, la administración de fichas y horarios, la coordinación de asesorías, las reservas del estudiante y la atención, acuerdos, seguimiento y reporte del tutor.
+
+Los estados describen el código implementado. La comprobación funcional integral con MariaDB en el equipo de demostración está pendiente.
 
 ## Requisitos
 
@@ -102,7 +104,7 @@ Estas cuentas se crean al ejecutar `semilladml.sql` en una instalación nueva:
 | Renata Cruz Luna | `26090022` | `2609002212345` |
 | Miguel Vera Díaz | `26090023` | `2609002312345` |
 
-David tiene estado laboral Investigación y su cuenta está inactiva. Los demás usuarios de la semilla están activos. El estudiante puede acceder a las funciones del módulo 4. Los tutores pueden iniciar sesión; sus funciones de atención y reporte quedan pendientes de incorporar el módulo 5.
+David tiene estado laboral Investigación y su cuenta está inactiva. Los demás usuarios de la semilla están activos. Cada usuario accede al menú de su perfil. El estudiante consulta y reserva sus asesorías; el tutor habilitado consulta sus franjas y estudiantes, registra la atención y los acuerdos, agenda seguimientos y consulta su reporte.
 
 Si una contraseña ya se cambió en la base local, debe utilizarse su valor actual. Las contraseñas se almacenan como hashes scrypt. Al registrar personas nuevas, Administración captura una contraseña definitiva y su confirmación.
 
@@ -112,6 +114,7 @@ Si una contraseña ya se cambió en la base local, debe utilizarse su valor actu
 - **Administración Escolar:** registro, consulta y edición de estudiantes y docentes, sus datos de acceso y sus horarios base.
 - **Coordinación de Tutorías:** consulta de docentes, habilitación de tutores activos, autorización de materias de su departamento, publicación de franjas, consulta del historial por número de control y reporte general por fechas, carrera y tutor.
 - **Estudiante:** selección de materias de su carga vigente, consulta de franjas compatibles, visualización de lugares disponibles y franjas sin cupo, confirmación de una reserva inicial y consulta de su propio historial de citas, acuerdos y seguimientos registrados.
+- **Tutor:** consulta de sus franjas por fecha y de los estudiantes con reserva, registro individual de la atención y el acuerdo, cierre del acuerdo o programación de una cita de seguimiento compatible, y reporte de sus propias asesorías por rango de fechas.
 
 El código del módulo 3 contempla cupo fijo de 10 lugares, bloques de una hora, materias autorizadas para el tutor y la carrera, fechas de lunes a viernes y horarios sin cruces con clases ni con otras franjas del tutor. Las escrituras relacionadas se agrupan en transacciones con confirmación o reversión de cambios.
 
@@ -119,7 +122,11 @@ El módulo 4 consulta la oferta para estudiantes inscritos, según su carrera y 
 
 Al confirmar, el sistema vuelve a validar la disponibilidad, el cupo y la elegibilidad del estudiante. Impide duplicar una reserva del mismo estudiante en la misma franja. Si la operación es válida, guarda la cita con estado **Programada** y muestra **Mi historial**; si la disponibilidad cambió, presenta un aviso y devuelve a la oferta. La identidad del estudiante se obtiene de su sesión autenticada.
 
-La consulta del historial puede mostrar acuerdos y citas de seguimiento existentes en la base de datos. El registro de la atención y la creación de acuerdos y seguimientos corresponden al módulo 5.
+El módulo 5 permite guardar un acuerdo individual al marcar la atención como realizada. El tutor elige **Cerrar acuerdo** o **Agendar seguimiento**. El seguimiento debe corresponder al mismo estudiante y tutor, en una franja posterior compatible con la carga vigente, los horarios y el cupo.
+
+La atención pasa a **Realizada** y el acuerdo queda **Cerrado** o **En seguimiento**. Al agendar un seguimiento se crea una reserva **Programada**, vinculada a la cita de origen. Estas operaciones se guardan en una sola transacción; si una validación falla, se revierten los cambios. Se impide guardar un segundo acuerdo o seguimiento para la misma cita.
+
+El tutor accede únicamente a las reservas y reportes de sus propias franjas. Los historiales muestran los acuerdos y las citas vinculadas, incluyendo el estado del seguimiento para distinguir una próxima asesoría programada de una cita de seguimiento ya atendida.
 
 ## Base de datos y datos de demostración
 
@@ -135,18 +142,21 @@ Los historiales y reportes consultan los registros existentes en la base de dato
 
 | Ruta | Función |
 | --- | --- |
-| `app.py` | Configuración de Flask, registro de módulos, navegación, protección de formularios y manejo de errores |
+| `app.py` | Configuración de Flask, registro de módulos, navegación y pestañas activas por perfil, protección de formularios y manejo de errores |
 | `auth.py` | Inicio y cierre de sesión, control de perfiles y restablecimiento de contraseña |
 | `config.py` | Parámetros de conexión y configuración de sesiones |
 | `db.py` | Conexiones, consultas parametrizadas y transacciones |
-| `reglas.py` | Validaciones compartidas, disponibilidad, elegibilidad y cupo de reservas, y consultas de historial |
+| `reglas.py` | Validaciones compartidas, disponibilidad, elegibilidad y cupo de reservas, y consultas de historial con el estado del seguimiento |
 | `modulos/admin.py` | Gestión de estudiantes y docentes |
 | `modulos/coordinacion.py` | Funciones de Coordinación de Tutorías |
 | `modulos/estudiante.py` | Oferta de asesorías, confirmación de reservas e historial del estudiante |
-| `modulos/tutor.py` | Rutas iniciales del tutor, pendientes del módulo 5 |
+| `modulos/tutor.py` | Consulta de franjas y estudiantes, atención, acuerdos, seguimiento y reporte del tutor |
 | `templates/` | Plantillas HTML de las pantallas |
 | `templates/estudiante/` | Oferta de franjas, confirmación de reserva e historial del estudiante |
+| `templates/tutor/` | Franjas, acuerdo individual, seguimiento y reporte del tutor |
+| `templates/_detalle_acuerdos.html` | Detalle compartido del acuerdo y de la cita de seguimiento vinculada |
 | `static/` | Estilos institucionales, JavaScript y Bootstrap local |
+| `static/js/seguimiento.js` | Habilitación y validación del selector de franja al elegir Agendar seguimiento |
 | `database.sql` | Estructura reproducible de la base de datos |
 | `semilladml.sql` | Catálogos y datos de demostración |
 | `requirements.txt` | Dependencias de Python |
