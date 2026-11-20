@@ -1,4 +1,4 @@
-# Reglas compartidas de validacion y coherencia de datos (Modulos 2 y 3)
+# Reglas compartidas de validacion y coherencia de datos (Modulos 2, 3 y 4)
 from datetime import date, datetime, timedelta
 import re
 import db
@@ -207,3 +207,116 @@ CONSULTA_CITAS = '''
 # Consulta historiales y reportes con condiciones internas y valores parametrizados
 def citas(where, params):
     return db.query(CONSULTA_CITAS+' WHERE '+where+' ORDER BY f.fecha, b.hora_inicio, e.matricula', params)
+
+
+# Reservas y oferta de asesorias del estudiante (Modulo 4)
+# La oferta informa; la confirmacion vuelve a comprobar los datos antes de guardar.
+# Texto SQL compartido para consultar franja, tutor, materia, carrera y horario.
+CONSULTA_FRANJA = '''
+ SELECT f.*, b.etiqueta AS horario, b.hora_inicio, c.nombre AS carrera, c.activa AS carrera_activa,
+ m.nombre AS materia, m.id_departamento AS departamento_materia,
+ d.id_departamento AS departamento_docente, d.habilitado_tutor, d.estado_laboral,
+ CONCAT_WS(' ',d.nombres,d.apellido_paterno,d.apellido_materno) AS docente
+ FROM franjas_asesoria f JOIN bloques_horarios b ON b.id_bloque = f.id_bloque
+ JOIN carreras c ON c.id_carrera = f.id_carrera JOIN materias m ON m.id_materia = f.id_materia
+ JOIN docentes d ON d.id_docente = f.id_docente
+'''
+
+
+# Obtiene los datos de una franja y permite bloquearla durante la confirmacion
+def datos_franja(id_franja, bloquear=False):
+    return db.query(CONSULTA_FRANJA+' WHERE f.id_franja = %s'+(' FOR UPDATE' if bloquear else ''),
+                    (id_franja,), one=True)
+
+
+# Cuenta las reservas que ocupan un lugar en la franja
+def reservas_activas(id_franja, bloquear=False):
+    # Al confirmar, FOR UPDATE permite leer y bloquear las reservas actuales.
+    return len(db.query("SELECT id_reserva FROM reservas_asesoria WHERE id_franja = %s "
+                        "AND estado_cita <> 'Cancelada'"+(' FOR UPDATE' if bloquear else ''), (id_franja,)))
+
+
+# Valida elegibilidad, carrera, carga, horarios, duplicados y cupo de una reserva
+def validar_reserva(estudiante, franja, bloquear=False, comprobar_cupo=True):
+    """Reglas comunes para reserva inicial y seguimiento.
+
+    Al escribir se bloquea docente, estudiante y franja, en ese orden.
+    Las comprobaciones críticas usan lecturas actuales dentro de la transacción.
+    """
+    lock = ' FOR UPDATE' if bloquear else ''
+    # Comprueba que la franja siga publicada y el estudiante este Inscrito.
+    if not franja or franja['estado'] != 'Publicada':
+        raise ReglaNegocio('La franja ya no está publicada.')
+    if estudiante['estado'] != 'Inscrito':
+        raise ReglaNegocio('Solo puede reservar un estudiante con estado Inscrito.')
+    # Exige un tutor habilitado y activo, con departamento compatible.
+    if (not franja['habilitado_tutor'] or franja['estado_laboral'] != 'Activo'
+            or franja['departamento_docente'] != franja['departamento_materia']):
+        raise ReglaNegocio('El tutor ya no está habilitado para esta asesoría.')
+    # La asesoria debe pertenecer a la carrera activa del estudiante.
+    if estudiante['id_carrera'] != franja['id_carrera'] or not franja['carrera_activa']:
+        raise ReglaNegocio('La franja debe corresponder a tu carrera.')
+    # Rechaza fines de semana, fechas pasadas y bloques que ya iniciaron.
+    f = fecha(franja['fecha'])
+    if not f or f.weekday() > 4 or f < hoy() or (f == hoy() and hora_texto(franja['hora_inicio']) <= ahora().strftime('%H:%M')):
+        raise ReglaNegocio('La fecha y hora de la asesoría deben ser futuras y de lunes a viernes.')
+    # Verifica la materia autorizada en el perfil del tutor y en la carrera.
+    autorizada = db.query('SELECT tm.id_materia FROM tutor_materias tm JOIN carrera_materia cm ON cm.id_materia = tm.id_materia '
+                         'WHERE tm.id_docente = %s AND tm.id_materia = %s AND cm.id_carrera = %s'+lock,
+                         (franja['id_docente'],franja['id_materia'],franja['id_carrera']), one=True)
+    if not autorizada:
+        raise ReglaNegocio('La materia ya no pertenece al perfil autorizado del tutor y de la carrera.')
+    # La materia debe formar parte de la carga vigente del estudiante.
+    carga = db.query('SELECT id_materia FROM horario_estudiante WHERE id_estudiante = %s AND id_materia = %s'+lock,
+                    (estudiante['id_estudiante'],franja['id_materia']))
+    if not carga:
+        raise ReglaNegocio('La materia debe estar inscrita en tu horario actual.')
+    # Rechaza cruces con clases del estudiante o del tutor en ese dia y bloque.
+    clase = db.query('SELECT id_horario_est FROM horario_estudiante WHERE id_estudiante = %s AND dia_semana = %s AND id_bloque = %s'+lock,
+                     (estudiante['id_estudiante'],dia(f),franja['id_bloque']))
+    clase_tutor = db.query('SELECT id_horario_doc FROM horario_docente WHERE id_docente = %s AND dia_semana = %s AND id_bloque = %s'+lock,
+                           (franja['id_docente'],dia(f),franja['id_bloque']))
+    if clase or clase_tutor:
+        raise ReglaNegocio('La asesoría coincide con una clase del estudiante o del tutor.')
+    # Evita repetir una reserva del estudiante dentro de la misma franja.
+    duplicada = db.query('SELECT id_reserva FROM reservas_asesoria WHERE id_estudiante = %s AND id_franja = %s'+lock,
+                         (estudiante['id_estudiante'],franja['id_franja']))
+    if duplicada:
+        raise ReglaNegocio('Ya tienes una reserva registrada en esta franja.')
+    # Rechaza otra asesoria del estudiante que coincida en fecha y horario.
+    traslape = db.query("SELECT r.id_reserva FROM reservas_asesoria r JOIN franjas_asesoria f ON f.id_franja = r.id_franja "
+                        "WHERE r.id_estudiante = %s AND r.estado_cita <> 'Cancelada' AND f.fecha = %s AND f.id_bloque = %s"+lock,
+                        (estudiante['id_estudiante'],f,franja['id_bloque']))
+    if traslape:
+        raise ReglaNegocio('Ya tienes otra asesoría en esa fecha y horario.')
+    # Calcula los lugares libres y exige cupo cuando se confirma la reserva.
+    libres = franja['cupo_maximo']-reservas_activas(franja['id_franja'],bloquear)
+    if comprobar_cupo and libres <= 0:
+        raise ReglaNegocio('La franja ya no tiene cupo.')
+    return max(0,libres)
+
+
+# Obtiene las franjas compatibles e incluye las agotadas para mostrar Sin cupo
+def oferta_estudiante(estudiante, id_materia=None, id_docente=None, posterior=None):
+    """Incluye agotadas para mostrar Sin cupo; no fabrica los ejemplos del wireframe."""
+    # Filtra las franjas publicadas por carrera, fecha, materia y tutor.
+    condiciones = ['f.id_carrera = %s', 'f.fecha >= %s', "f.estado = 'Publicada'"]
+    params = [estudiante['id_carrera'],hoy()]
+    if id_materia:
+        condiciones.append('f.id_materia = %s'); params.append(id_materia)
+    if id_docente:
+        condiciones.append('f.id_docente = %s'); params.append(id_docente)
+    filas = db.query(CONSULTA_FRANJA+' WHERE '+' AND '.join(condiciones)+' ORDER BY f.fecha,b.hora_inicio',tuple(params))
+    salida = []
+    for franja in filas:
+        # Si se solicita una cita posterior, descarta horarios anteriores o iguales.
+        if posterior and (fecha(franja['fecha']),hora_texto(franja['hora_inicio'])) <= posterior:
+            continue
+        # Comprueba la compatibilidad sin ocultar las franjas agotadas.
+        try:
+            libres = validar_reserva(estudiante,franja,comprobar_cupo=False)
+        except ReglaNegocio:
+            continue
+        franja['lugares_libres'] = libres
+        salida.append(franja)
+    return salida

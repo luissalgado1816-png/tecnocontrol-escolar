@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block titulo %}Mi historial · TecnoControl Escolar{% endblock %}
+{% block contenido %}
+<h1 class="h4 mb-4">Mi historial</h1>
+<div class="table-responsive"><table class="table align-middle">
+  <thead><tr><th>Fecha</th><th>Horario</th><th>Materia</th><th>Tutor</th><th>Estado</th><th>Tipo</th></tr></thead>
+  <tbody>{% for f in filas %}<tr><td>{{ f.fecha|fecha_dia }}</td><td>{{ f.horario|bloque }}</td><td>{{ f.materia }}</td><td>{{ f.docente }}</td><td>{{ f.estado_cita }}</td><td>{{ f.tipo_cita }}</td></tr>
+    {% else %}<tr><td colspan="6">Aún no tienes asesorías registradas.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% include '_detalle_acuerdos.html' %}
+{% endblock %}

@@ -93,7 +93,10 @@ def create_app(config=None):
         if g.get("user"):
             actual = request.endpoint or ""
             for etiqueta, endpoint in MENU.get(g.user["codigo_rol"], []):
-                activa = actual.startswith(endpoint) or (actual == 'coordinacion.perfil' and endpoint == 'coordinacion.tutores')
+                # Modulo 4: mantiene activa Reservar asesoria al confirmar la reserva.
+                activa = (actual.startswith(endpoint)
+                          or (actual == 'coordinacion.perfil' and endpoint == 'coordinacion.tutores')
+                          or (actual == 'estudiante.confirmar' and endpoint == 'estudiante.reservar'))
                 pestanas.append((etiqueta, endpoint, activa))
         return {"csrf_token": csrf_token, "pestanas": pestanas}
 

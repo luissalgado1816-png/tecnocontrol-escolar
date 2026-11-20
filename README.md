@@ -1,43 +1,47 @@
 # TecnoControl Escolar
 
-Sistema web académico de asesorías del Instituto Tecnológico de Zacatepec.
-Python, Flask, PyMySQL, MariaDB y Jinja2 con Bootstrap local.
+Proyecto académico de un sistema web para la gestión de asesorías escolares del Instituto Tecnológico de Zacatepec. Utiliza Python, Flask, PyMySQL y MariaDB, con plantillas Jinja2 y Bootstrap incluido en el proyecto.
 
-## Estado de esta entrega
+## Estado actual
 
-| Módulo | Estado |
-| --- | --- |
-| 1 · Acceso, sesiones y restablecimiento | Conservado del proyecto recibido |
-| 2 · Administración de estudiantes y docentes | Implementado |
-| 3 · Coordinación de Tutorías | Pendiente de incorporar |
-| 4 · Reservas e historial del estudiante | Pendiente de incorporar |
-| 5 · Atención y seguimiento del tutor | Pendiente de incorporar |
+| Módulo | Contenido | Estado |
+| --- | --- | --- |
+| 1 | Inicio y cierre de sesión, acceso por perfil y restablecimiento de contraseña | Implementado |
+| 2 | Administración de estudiantes y docentes, fichas y horarios base | Implementado |
+| 3 | Coordinación de Tutorías: habilitación, perfiles, franjas, historial y reporte general | Integrado; pendiente de comprobación funcional con MariaDB en el equipo de demostración |
+| 4 | Reservas e historial del estudiante | Implementado; pendiente de comprobación funcional con MariaDB en el equipo de demostración |
+| 5 | Atención, acuerdos, seguimiento y reporte del tutor | Pendiente de incorporar |
 
-Los estados indican código implementado. La evidencia de comprobación y sus
-límites se detallan en docs/VALIDACION_MODULO_2.md.
-Se conserva modulos/_init_.py tal como lo entregó el estudiante.
+Esta versión contiene los módulos 1, 2, 3 y 4. El estudiante dispone de oferta de asesorías, confirmación de reserva y consulta de su historial. Las funciones de atención, registro de acuerdos, seguimiento y reporte del tutor quedan pendientes del módulo 5.
 
 ## Requisitos
 
-- Python 3.14 en el equipo de demostración.
-- MariaDB 10.4.32 de XAMPP, con MySQL iniciado desde su panel.
+- Python 3.14.
+- MariaDB 10.4.32, incluido en XAMPP.
 - Un navegador Firefox o Microsoft Edge.
-- Dependencias de requirements.txt: Flask 3.1.3 y PyMySQL 1.2.4, con sus versiones fijadas.
-- El puerto de MariaDB por defecto es 3306; Flask usa 127.0.0.1:5000.
+- Dependencias indicadas en `requirements.txt`, entre ellas Flask 3.1.3 y PyMySQL 1.2.4.
+- Puerto local 3306 para MariaDB y puerto 5000 para la aplicación Flask.
 
-Bootstrap se incluye en static/vendor/bootstrap. No hay descargas de fuentes,
-JavaScript o CSS desde CDN durante el uso de la aplicación. Apache no es necesario
-para servir Flask; solo se usa si se elige phpMyAdmin como herramienta SQL.
+Bootstrap está incluido en `static/vendor/bootstrap/`; los estilos y scripts se sirven desde el propio proyecto. Flask sirve la aplicación web. Apache solo es necesario si se utiliza phpMyAdmin para administrar la base de datos.
 
-## Instalación nueva para la docente
+## Instalación en Windows
 
-1. Descarga el repositorio completo y descomprímelo. Abre la carpeta que contiene app.py.
-2. Instala Python y XAMPP con MariaDB, si aún no están disponibles.
-3. Inicia MySQL en XAMPP. Con Database Client de VS Code o phpMyAdmin, ejecuta
-   database.sql y después semilladml.sql, completos y en ese orden.
-   database.sql elimina y vuelve a crear tecnocontrol_escolar: esta instrucción
-   corresponde únicamente a una instalación nueva o a una base de demostración descartable.
-4. Abre CMD en la carpeta del proyecto y prepara el entorno:
+### 1. Preparar el proyecto
+
+Descarga el repositorio y descomprímelo. Abre en VS Code la carpeta que contiene `app.py`, `requirements.txt` y los scripts SQL.
+
+### 2. Crear y cargar la base de datos
+
+Inicia MySQL desde el panel de XAMPP. En Database Client de VS Code o en phpMyAdmin, ejecuta los scripts completos en este orden:
+
+1. `database.sql`: crea la base `tecnocontrol_escolar`, las 16 tablas, las dos vistas y los cinco triggers.
+2. `semilladml.sql`: carga los catálogos y los datos de demostración.
+
+**Esta carga corresponde a una instalación nueva.** `database.sql` elimina y vuelve a crear la base de datos. Si la aplicación ya está instalada, conserva la base existente al incorporar los módulos siguientes; estas actualizaciones utilizan el mismo esquema.
+
+### 3. Preparar el entorno de Python
+
+Abre una terminal CMD en la carpeta principal del proyecto y ejecuta:
 
 ```bat
 python -m venv venv
@@ -45,98 +49,105 @@ venv\Scripts\activate.bat
 python -m pip install -r requirements.txt
 ```
 
-5. La configuración predeterminada conecta a 127.0.0.1:3306, usuario root, sin
-   contraseña, base tecnocontrol_escolar. Si tu instalación es distinta, configura
-   DB_HOST, DB_PORT, DB_USER, DB_PASSWORD y DB_NAME como variables de entorno antes
-   de iniciar. DB_SOCKET es opcional y normalmente no se usa en Windows.
-6. Para conservar la firma de sesión entre reinicios, configura una SECRET_KEY propia
-   y estable en ese equipo. La aplicación genera una si no se define.
-7. Inicia Flask:
+### 4. Revisar la conexión
+
+La configuración de `config.py` utiliza estos valores predeterminados:
+
+| Variable de entorno | Valor predeterminado | Uso |
+| --- | --- | --- |
+| `DB_HOST` | `127.0.0.1` | Dirección del servidor MariaDB |
+| `DB_PORT` | `3306` | Puerto de MariaDB |
+| `DB_USER` | `root` | Usuario de conexión |
+| `DB_PASSWORD` | Vacío | Contraseña de conexión |
+| `DB_NAME` | `tecnocontrol_escolar` | Base de datos de la aplicación |
+
+Si la instalación de MariaDB tiene otros datos de acceso, define las variables correspondientes en la terminal antes de iniciar Flask. Por ejemplo, si el usuario de MariaDB tiene contraseña:
+
+```bat
+set DB_PASSWORD=tu_contrasena_local
+```
+
+También se puede definir `SECRET_KEY` con un valor propio y estable para conservar la firma de las sesiones entre reinicios. Si no se define, la aplicación genera una clave al iniciarse. `DB_SOCKET` es opcional para instalaciones que utilicen un socket local.
+
+### 5. Iniciar la aplicación
+
+Con el entorno virtual activo y MariaDB en ejecución:
 
 ```bat
 python app.py
 ```
 
-8. Abre http://127.0.0.1:5000. Cierra la aplicación desde la terminal con Ctrl+C.
-   La depuración está desactivada por defecto. No hace falta modificar el código
-   para cambiar los parámetros locales de conexión.
+Abre [http://127.0.0.1:5000](http://127.0.0.1:5000) en el navegador. Para detener Flask, presiona `Ctrl+C` en su terminal.
 
-## Actualizar el proyecto que Luis ya tiene funcionando
-
-Conserva tu venv, tu base y tus datos. Aplica los paquetes de los módulos en orden
-2, 3, 4 y 5, copiando las rutas de la carpeta archivos/ a la raíz del repositorio.
-Cada paquete explica qué agregar, reemplazar y conservar. Guarda una etapa,
-comprueba su funcionamiento y registra su commit con GitHub Desktop antes de la
-siguiente. Estos módulos utilizan el esquema existente: no es necesario volver
-a ejecutar database.sql ni recargar semilladml.sql para incorporar la actualización.
-Reinicia Flask después de actualizar Python y recarga el navegador con Ctrl+F5
-después de actualizar CSS o JavaScript.
-
-## Cuentas de demostración de semilladml.sql
-
-| Perfil/persona | Usuario | Contraseña de la semilla |
-| --- | --- | --- |
-| Administrador Escolar | adminescolar0001 | Admin2026* |
-| Coordinación de Tutorías | coordinadortutoria0001 | Coord2026* |
-| Tutor Daniel Vargas León | maestro0001 | Tutor2026* |
-| Tutor Julián Vega Soto | maestro0002 | Tutor2026* |
-| Tutora Sara León Ruiz | maestro0003 | Tutor2026* |
-| David Santos Cruz, Investigación y no habilitado | maestro0004 | Docente2026* |
-| Luis Ivan Salgado Rivera | 22090748 | 2209074812345 |
-| Renata Cruz Luna | 26090022 | 2609002212345 |
-| Miguel Vera Díaz | 26090023 | 2609002312345 |
-
-Estas son cuentas de prueba. Si restableciste una contraseña en tu base local,
-usa su valor actual. Las contraseñas del SQL son hashes scrypt. Las altas nuevas
-usan la contraseña definitiva que captura Administración, no la fórmula de la
-cuenta de ejemplo de Luis.
-
-## Reglas y recorrido de referencia
-
-Administración registra fichas y clases. Coordinación habilita a docentes activos,
-autoriza materias de su departamento y publica franjas por carrera y fecha.
-El estudiante reserva su primera cita. El tutor registra la atención y un acuerdo
-individual, con cierre o seguimiento para el mismo estudiante y tutor.
-
-Se mantienen semestre calculado en solo lectura; prefijos C/T; correo con dominio
-@zacatepec.tecnm.mx; bloques de una hora; cupo fijo de 10; materias de la carga
-vigente; horarios compatibles y consultas limitadas al perfil.
-
-La recuperación local conserva usuario o número de control y correo registrados,
-y habilita el cambio de contraseña en esa misma pantalla, sin envío de correos,
-SMS ni autorización administrativa.
-
-database.sql define 16 tablas, dos vistas y cinco triggers.
-La semilla incluye nueve cuentas, cuatro docentes, tres estudiantes, 37 clases
-de estudiantes, dos clases de docente, tres franjas y dos reservas iniciales.
-No incluye todavía la reserva ni el acuerdo de Luis.
-
-Caso del recorrido: Luis 22090748, Ingeniería de Software con Daniel DOC-104;
-viernes 20/11/2026 de 11:00–12:00 y seguimiento martes 24/11/2026 de 12:00–13:00.
-Las fechas de la oferta se comparan con el reloj local del equipo. Si se ejecuta
-después de esas fechas, Coordinación puede publicar otras franjas futuras válidas.
-No se agregan automáticamente citas para simular el recorrido.
-
-## Pruebas aisladas
-
-Con el venv activo y desde la raíz:
+En aperturas posteriores basta con iniciar MariaDB, abrir CMD en la carpeta del proyecto, activar el entorno y ejecutar la aplicación:
 
 ```bat
-python -m unittest discover -s tests -t . -v
+venv\Scripts\activate.bat
+python app.py
 ```
 
-La suite crea archivos SQLite temporales, usa copias de los catálogos y cuentas
-de la semilla y sustituye la conexión dentro de las pruebas. No escribe en XAMPP,
-no restablece cuentas reales y no borra periodos de tu base. Comprueba recorridos
-de Flask y reglas de aplicación. No sustituye la validación de bloqueos y triggers
-en MariaDB real ni las pruebas de navegador. El reloj de las pruebas está fijado
-al 19/11/2026, sin cambiar el reloj de la aplicación.
+## Cuentas de demostración
 
-## Estructura del código
+Estas cuentas se crean al ejecutar `semilladml.sql` en una instalación nueva:
 
-- app.py, auth.py, db.py y config.py: base compartida y módulo 1 conservado.
-- modulos/: rutas por perfil; los comentarios identifican RF y reglas relevantes.
-- reglas.py: comprobaciones compartidas y consultas de coherencia.
-- templates/: vistas Jinja2; static/: estilos institucionales y scripts locales.
-- tests/: comprobaciones aisladas; docs/: validación y trazabilidad por etapa.
-- database.sql y semilladml.sql: esquema y datos reproducibles de referencia.
+| Perfil o persona | Usuario | Contraseña inicial de demostración |
+| --- | --- | --- |
+| Administrador Escolar | `adminescolar0001` | `Admin2026*` |
+| Coordinación de Tutorías | `coordinadortutoria0001` | `Coord2026*` |
+| Tutor Daniel Vargas León | `maestro0001` | `Tutor2026*` |
+| Tutor Julián Vega Soto | `maestro0002` | `Tutor2026*` |
+| Tutora Sara León Ruiz | `maestro0003` | `Tutor2026*` |
+| David Santos Cruz, no habilitado como tutor | `maestro0004` | `Docente2026*` |
+| Luis Ivan Salgado Rivera | `22090748` | `2209074812345` |
+| Renata Cruz Luna | `26090022` | `2609002212345` |
+| Miguel Vera Díaz | `26090023` | `2609002312345` |
+
+David tiene estado laboral Investigación y su cuenta está inactiva. Los demás usuarios de la semilla están activos. El estudiante puede acceder a las funciones del módulo 4. Los tutores pueden iniciar sesión; sus funciones de atención y reporte quedan pendientes de incorporar el módulo 5.
+
+Si una contraseña ya se cambió en la base local, debe utilizarse su valor actual. Las contraseñas se almacenan como hashes scrypt. Al registrar personas nuevas, Administración captura una contraseña definitiva y su confirmación.
+
+## Funciones disponibles por perfil
+
+- **Acceso:** inicio y cierre de sesión, navegación según el perfil y restablecimiento de contraseña mediante el usuario o número de control y el correo institucional registrado, en la misma pantalla.
+- **Administración Escolar:** registro, consulta y edición de estudiantes y docentes, sus datos de acceso y sus horarios base.
+- **Coordinación de Tutorías:** consulta de docentes, habilitación de tutores activos, autorización de materias de su departamento, publicación de franjas, consulta del historial por número de control y reporte general por fechas, carrera y tutor.
+- **Estudiante:** selección de materias de su carga vigente, consulta de franjas compatibles, visualización de lugares disponibles y franjas sin cupo, confirmación de una reserva inicial y consulta de su propio historial de citas, acuerdos y seguimientos registrados.
+
+El código del módulo 3 contempla cupo fijo de 10 lugares, bloques de una hora, materias autorizadas para el tutor y la carrera, fechas de lunes a viernes y horarios sin cruces con clases ni con otras franjas del tutor. Las escrituras relacionadas se agrupan en transacciones con confirmación o reversión de cambios.
+
+El módulo 4 consulta la oferta para estudiantes inscritos, según su carrera y las materias de su carga vigente. Excluye horarios incompatibles con sus clases o con otras reservas y permite reservar con tutores habilitados y activos. Las franjas sin lugares se muestran como **Sin cupo**, con la acción de reserva deshabilitada.
+
+Al confirmar, el sistema vuelve a validar la disponibilidad, el cupo y la elegibilidad del estudiante. Impide duplicar una reserva del mismo estudiante en la misma franja. Si la operación es válida, guarda la cita con estado **Programada** y muestra **Mi historial**; si la disponibilidad cambió, presenta un aviso y devuelve a la oferta. La identidad del estudiante se obtiene de su sesión autenticada.
+
+La consulta del historial puede mostrar acuerdos y citas de seguimiento existentes en la base de datos. El registro de la atención y la creación de acuerdos y seguimientos corresponden al módulo 5.
+
+## Base de datos y datos de demostración
+
+`database.sql` define 16 tablas InnoDB, dos vistas calculadas y cinco triggers, con codificación `utf8mb4` y cotejamiento `utf8mb4_unicode_ci`.
+
+La semilla contiene nueve cuentas, cuatro docentes, tres estudiantes, 37 registros de horario de estudiantes, dos de horario docente, tres franjas y dos reservas iniciales. No contiene acuerdos ni reservas para el estudiante 22090748.
+
+Las franjas de demostración están fechadas el 20, 24 y 25 de noviembre de 2026. La disponibilidad se calcula con la fecha y hora locales del equipo; para una demostración posterior se pueden publicar otras franjas futuras válidas desde Coordinación.
+
+Los historiales y reportes consultan los registros existentes en la base de datos. La información ilustrativa de los wireframes no se carga automáticamente como datos.
+
+## Archivos principales
+
+| Ruta | Función |
+| --- | --- |
+| `app.py` | Configuración de Flask, registro de módulos, navegación, protección de formularios y manejo de errores |
+| `auth.py` | Inicio y cierre de sesión, control de perfiles y restablecimiento de contraseña |
+| `config.py` | Parámetros de conexión y configuración de sesiones |
+| `db.py` | Conexiones, consultas parametrizadas y transacciones |
+| `reglas.py` | Validaciones compartidas, disponibilidad, elegibilidad y cupo de reservas, y consultas de historial |
+| `modulos/admin.py` | Gestión de estudiantes y docentes |
+| `modulos/coordinacion.py` | Funciones de Coordinación de Tutorías |
+| `modulos/estudiante.py` | Oferta de asesorías, confirmación de reservas e historial del estudiante |
+| `modulos/tutor.py` | Rutas iniciales del tutor, pendientes del módulo 5 |
+| `templates/` | Plantillas HTML de las pantallas |
+| `templates/estudiante/` | Oferta de franjas, confirmación de reserva e historial del estudiante |
+| `static/` | Estilos institucionales, JavaScript y Bootstrap local |
+| `database.sql` | Estructura reproducible de la base de datos |
+| `semilladml.sql` | Catálogos y datos de demostración |
+| `requirements.txt` | Dependencias de Python |
+

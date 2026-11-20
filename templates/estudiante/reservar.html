@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block titulo %}Reservar asesoría · TecnoControl Escolar{% endblock %}
+{% block contenido %}
+<h1 class="h4 mb-4">Reservar asesoría</h1>
+<form method="get" class="row g-3 align-items-end mb-4">
+  <div class="col-md-6"><label for="materia" class="form-label">Materia inscrita en el semestre actual</label>
+    <select id="materia" name="materia" class="form-select" required>
+      <option value="">Selecciona una materia</option>{% for m in materias %}<option value="{{ m.id_materia }}" {{ 'selected' if seleccion == m.id_materia }}>{{ m.nombre }}</option>{% endfor %}
+    </select></div>
+  <div class="col-md-auto"><button class="btn btn-primary">Buscar franjas</button></div>
+</form>
+{% if estudiante.estado != 'Inscrito' %}<div class="alert alert-warning">Solo puede reservar un estudiante con estado Inscrito.</div>{% endif %}
+<h2 class="h6">Franjas disponibles</h2>
+{% set filas = disponibles %}{% include 'estudiante/_oferta.html' %}
+{% if agotadas %}<h2 class="h6 mt-4">Franjas agotadas</h2>{% set filas = agotadas %}{% include 'estudiante/_oferta.html' %}{% endif %}
+{% endblock %}
