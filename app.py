@@ -1,7 +1,6 @@
 # Motor principal de TecnoControl Escolar (Flask)
 import hmac
 import secrets
-
 import pymysql
 from flask import Flask, abort, g, render_template, request, session
 
