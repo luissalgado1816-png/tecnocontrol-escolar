@@ -6,7 +6,7 @@
 {% if estudiante %}
 <h2 class="h6">{{ estudiante.nombre }}</h2><p>{{ estudiante.carrera }}</p>
 <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Día</th><th>Fecha</th><th>Horario</th><th>Materia</th><th>Tutor</th><th>Estado de cita</th><th>Acuerdo / cita</th></tr></thead>
-<tbody>{% for r in filas %}<tr><td>{{ (r.fecha|fecha_dia).split(' ')[0] }}</td><td>{{ r.fecha|fecha }}</td><td>{{ r.horario|bloque }}</td><td>{{ r.materia }}</td><td>{{ r.docente }}</td><td>{{ r.estado_cita }}</td><td>{{ r.estado_acuerdo or r.tipo_cita }}</td></tr>
+<tbody>{% for r in filas %}<tr><td>{{ (r.fecha|fecha_dia).split(' ')[0] }}</td><td>{{ r.fecha|fecha }}</td><td>{{ r.horario|bloque }}</td><td>{{ r.materia }}</td><td>{{ r.docente }}</td><td>{{ r.estado_cita|replace('No asistio','No asistió') }}</td><td>{{ r.estado_acuerdo or r.tipo_cita }}</td></tr>
 {% else %}<tr><td colspan="7">El estudiante aún no tiene asesorías registradas.</td></tr>{% endfor %}</tbody></table></div>
 {% include '_detalle_acuerdos.html' %}
 {% elif q %}<div class="alert alert-warning">Estudiante no encontrado.</div>{% endif %}

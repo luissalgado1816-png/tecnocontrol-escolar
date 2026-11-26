@@ -1,0 +1,22 @@
+<div class="table-responsive"><table class="table table-sm align-middle">
+  <thead><tr><th>Fecha</th><th>Horario</th><th>Materia</th><th>Número de control</th><th>Estudiante</th><th>Estado</th>{% if not preview %}<th>Acción</th>{% endif %}</tr></thead>
+  <tbody>
+  {% for dia in dias_periodo %}
+    {% for f in dia.bloques %}
+      {% for r in f.alumnos %}
+      <tr><td>{{ dia.fecha|fecha_dia }}</td><td>{{ f.etiqueta|bloque }}</td><td>{{ f.materia }}</td><td>{{ r.matricula }}</td><td>{{ r.estudiante }}</td><td>{{ r.estado_cita }}{% if r.motivo_cancelacion == suspension_no_restablecida %} · no restablecida{% endif %}</td>
+        {% if not preview and loop.first %}<td rowspan="{{ f.alumnos|length }}">{{ boton_restablecer(dia.fecha) if f.restablecible else '—' }}</td>{% endif %}
+      </tr>
+      {% else %}
+      <tr><td>{{ dia.fecha|fecha_dia }}</td><td>{{ f.etiqueta|bloque }}</td><td>{{ f.materia }}</td><td colspan="3">{{ 'Asesoría cancelada' if f.estado=='Cancelada' else 'Sin reservas' }}</td>
+        {% if not preview %}<td>{{ boton_restablecer(dia.fecha) if f.restablecible else '—' }}</td>{% endif %}
+      </tr>
+      {% endfor %}
+    {% else %}
+    <tr><td>{{ dia.fecha|fecha_dia }}</td><td>—</td><td colspan="4">Sin asesorías</td>
+      {% if not preview %}<td>{{ boton_restablecer(dia.fecha) if dia.fecha in dias_suspendidos else '—' }}</td>{% endif %}
+    </tr>
+    {% endfor %}
+  {% endfor %}
+  </tbody>
+</table></div>

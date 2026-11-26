@@ -74,6 +74,10 @@
         </div>
       </div>
       <div class="col-md-4"></div>
+      {% if actual %}
+      <div class="col-md-4"><label for="pass-actual" class="form-label">Contraseña definitiva</label><input id="pass-actual" class="form-control" value="••••••••" readonly></div>
+      <div class="col-auto align-self-end"><button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#reset-docente">Restablecer contraseña</button></div>
+      {% else %}
       <div class="col-md-4">
         <label for="password" class="form-label">Contraseña definitiva</label>
         <input type="password" class="form-control" id="password" name="password" minlength="8" autocomplete="new-password"
@@ -84,6 +88,7 @@
         <input type="password" class="form-control" id="confirmar" name="confirmar" minlength="8" autocomplete="new-password"
                {{ 'required' if not actual }}>
       </div>
+      {% endif %}
     </div>
   </div>
 
@@ -95,6 +100,12 @@
     {% if not actual %}<span class="text-muted small">Coordinación activa el acceso de tutor al habilitar su perfil.</span>{% endif %}
   </div>
 </form>
+{% if actual %}<div class="modal fade" id="reset-docente" tabindex="-1" aria-labelledby="titulo-reset"><div class="modal-dialog modal-dialog-centered"><form class="modal-content p-4" method="post" action="{{ url_for('admin.restablecer_docente',id_docente=actual.id_docente) }}">
+  <h2 class="h5" id="titulo-reset">Restablecer contraseña</h2><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <label class="form-label" for="nueva">Nueva contraseña</label><input class="form-control mb-2" type="password" name="nueva" id="nueva" autocomplete="new-password" minlength="8" required>
+  <label class="form-label" for="repetir">Confirmar contraseña</label><input class="form-control mb-3" type="password" name="repetir" id="repetir" autocomplete="new-password" minlength="8" required>
+  <div><button class="btn btn-primary">Restablecer contraseña</button> <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancelar</button></div>
+</form></div></div>{% endif %}
 {% endblock %}
 
 {% block scripts %}

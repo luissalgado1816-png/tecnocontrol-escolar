@@ -1,19 +1,17 @@
-
-SET NAMES utf8mb4;
--- Precaución: reinicia la base de datos completa en entorno de desarrollo
-DROP DATABASE IF EXISTS tecnocontrol_escolar;
-CREATE DATABASE tecnocontrol_escolar CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- Active: 1794701908966@@127.0.0.1@3306@mysql
+-- Instalación y actualización incremental del esquema de TecnoControl Escolar.
+CREATE DATABASE IF NOT EXISTS tecnocontrol_escolar CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE tecnocontrol_escolar;
 
 -- 1. CATALOGO DE ROLES (recibe datos desde "Insercion de roles" en semilladml)
-CREATE TABLE roles (
+CREATE TABLE IF NOT EXISTS roles (
     id_rol INT AUTO_INCREMENT PRIMARY KEY,
     codigo_rol VARCHAR(30) NOT NULL UNIQUE,
     nombre_actor VARCHAR(40) NOT NULL UNIQUE
 ) ENGINE=InnoDB;
 
 -- 2. CATALOGO DE PERIODOS ESCOLARES (recibe datos desde "Inserccion de periodos_escolares" en semilladml)
-CREATE TABLE periodos_escolares (
+CREATE TABLE IF NOT EXISTS periodos_escolares (
     id_periodo INT AUTO_INCREMENT PRIMARY KEY,
     anio SMALLINT NOT NULL,
     ciclo ENUM('Enero-Junio', 'Agosto-Diciembre') NOT NULL,
@@ -25,7 +23,7 @@ CREATE TABLE periodos_escolares (
 ) ENGINE=InnoDB;
 
 -- 3. CATALOGO DE BLOQUES HORARIOS(recibe datos desde "Inserccion de tabla bloques_horarios" en semilladml)
-CREATE TABLE bloques_horarios (
+CREATE TABLE IF NOT EXISTS bloques_horarios (
     id_bloque INT AUTO_INCREMENT PRIMARY KEY,
     hora_inicio TIME NOT NULL,
     hora_fin TIME NOT NULL,
@@ -38,13 +36,13 @@ CREATE TABLE bloques_horarios (
 ) ENGINE=InnoDB;
 
 -- 4. DEPARTAMENTOS (recibe datos desde "Inserccion departamentos" en semilladml)
-CREATE TABLE departamentos (
+CREATE TABLE IF NOT EXISTS departamentos (
     id_departamento INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL UNIQUE
 ) ENGINE=InnoDB;
 
 -- 5. CARRERAS (recibe datos desde "Inserccion carreras" en semilladml)
-CREATE TABLE carreras (
+CREATE TABLE IF NOT EXISTS carreras (
     id_carrera INT AUTO_INCREMENT PRIMARY KEY,
     clave_oficial VARCHAR(20) NOT NULL UNIQUE,
     nombre VARCHAR(120) NOT NULL,
@@ -52,7 +50,7 @@ CREATE TABLE carreras (
 ) ENGINE=InnoDB;
 
 -- 6. CATALOGO DE MATERIAS (recibe datos desde "Inserccion materias" en semilladml)
-CREATE TABLE materias (
+CREATE TABLE IF NOT EXISTS materias (
     id_materia INT AUTO_INCREMENT PRIMARY KEY,
     clave_oficial VARCHAR(20) NOT NULL UNIQUE,
     nombre VARCHAR(120) NOT NULL,
@@ -63,7 +61,7 @@ CREATE TABLE materias (
 ) ENGINE=InnoDB;
 
 -- 7. RELACION CARRERA - MATERIA (N:M) (recibe datos desde "Inserccion carrera_metaria" en semilladml)
-CREATE TABLE carrera_materia (
+CREATE TABLE IF NOT EXISTS carrera_materia (
     id_carrera INT NOT NULL,
     id_materia INT NOT NULL,
     PRIMARY KEY (id_carrera, id_materia),
@@ -72,7 +70,7 @@ CREATE TABLE carrera_materia (
 ) ENGINE=InnoDB;
 
 -- 8. CUENTAS DE USUARIO (recibe datos desde "Ingresar usuarios con contraseña hash" en semilladml)
-CREATE TABLE usuarios (
+CREATE TABLE IF NOT EXISTS usuarios (
     id_usuario INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
@@ -85,7 +83,7 @@ CREATE TABLE usuarios (
 
 -- 9. ESTUDIANTES (el semestre se calcula en la vista v_estudiantes_semestre)
 -- (recibe datos desde "Insertar estudiantes" en semilladml)
-CREATE TABLE estudiantes (
+CREATE TABLE IF NOT EXISTS estudiantes (
     id_estudiante INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT NOT NULL UNIQUE,
     matricula VARCHAR(20) NOT NULL UNIQUE,
@@ -102,7 +100,7 @@ CREATE TABLE estudiantes (
 ) ENGINE=InnoDB;
 
 -- 10. DOCENTES Y TUTORES (recibe datos desde "Insertar docentes" en semilladml)
-CREATE TABLE docentes (
+CREATE TABLE IF NOT EXISTS docentes (
     id_docente INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT NOT NULL UNIQUE,
     clave_docente VARCHAR(20) NOT NULL UNIQUE,
@@ -120,7 +118,7 @@ CREATE TABLE docentes (
 
 -- 11. PERFIL DE ASESORIAS (materias autorizadas al tutor por Coordinacion)
 -- (recibe datos desde "Insertar tutor_materias" en semilladml)
-CREATE TABLE tutor_materias (
+CREATE TABLE IF NOT EXISTS tutor_materias (
     id_docente INT NOT NULL,
     id_materia INT NOT NULL,
     PRIMARY KEY (id_docente, id_materia),
@@ -130,7 +128,7 @@ CREATE TABLE tutor_materias (
 
 -- 12A. HORARIO BASE DE ESTUDIANTE (recibe datos desde "Insertar horario_estudiante" en semilladml)
 -- segunda carga recibe datos desde "Continuacion de la carga para la tabla horario_estudiante" en semilladml)
-CREATE TABLE horario_estudiante (
+CREATE TABLE IF NOT EXISTS horario_estudiante (
     id_horario_est INT AUTO_INCREMENT PRIMARY KEY,
     id_estudiante INT NOT NULL,
     id_materia INT NOT NULL,
@@ -143,7 +141,7 @@ CREATE TABLE horario_estudiante (
 ) ENGINE=InnoDB;
 
 -- 12B. HORARIO BASE DE DOCENTE (recibe datos desde "Inserccion datos horario_docente" en semilladml)
-CREATE TABLE horario_docente (
+CREATE TABLE IF NOT EXISTS horario_docente (
     id_horario_doc INT AUTO_INCREMENT PRIMARY KEY,
     id_docente INT NOT NULL,
     id_carrera INT NOT NULL,
@@ -157,7 +155,7 @@ CREATE TABLE horario_docente (
 ) ENGINE=InnoDB;
 
 -- 13. FRANJAS DE ASESORIA PUBLICADAS (recibe datos desde "Inserccion Franjas_asesorias, correccion de agotado" en semilladml)
-CREATE TABLE franjas_asesoria (
+CREATE TABLE IF NOT EXISTS franjas_asesoria (
     id_franja INT AUTO_INCREMENT PRIMARY KEY,
     id_docente INT NOT NULL,
     id_carrera INT NOT NULL,
@@ -170,12 +168,11 @@ CREATE TABLE franjas_asesoria (
     CONSTRAINT fk_fa_car_mat FOREIGN KEY (id_carrera, id_materia) REFERENCES carrera_materia(id_carrera, id_materia),
     CONSTRAINT fk_fa_blq FOREIGN KEY (id_bloque) REFERENCES bloques_horarios(id_bloque),
     CONSTRAINT uq_doc_fecha_blq UNIQUE (id_docente, fecha, id_bloque),
-    CONSTRAINT ck_fa_cupo CHECK (cupo_maximo = 10),  -- RN-04: cupo fijo de 10 lugares
     INDEX idx_fa_materia_fecha (id_materia, fecha)
 ) ENGINE=InnoDB;
 
 -- 14. RESERVAS DE ASESORIA (recibe datos desde "Inserccion reserva_asesoria" en semilladml)
-CREATE TABLE reservas_asesoria (
+CREATE TABLE IF NOT EXISTS reservas_asesoria (
     id_reserva INT AUTO_INCREMENT PRIMARY KEY,
     id_franja INT NOT NULL,
     id_estudiante INT NOT NULL,
@@ -196,7 +193,7 @@ CREATE TABLE reservas_asesoria (
 ) ENGINE=InnoDB;
 -- 
 -- 15. ACUERDOS TUTORIALES
-CREATE TABLE acuerdos (
+CREATE TABLE IF NOT EXISTS acuerdos (
     id_acuerdo INT AUTO_INCREMENT PRIMARY KEY,
     id_reserva INT NOT NULL UNIQUE,
     descripcion_acuerdo TEXT NOT NULL,
@@ -208,7 +205,7 @@ CREATE TABLE acuerdos (
 -- Vistas
 -- Semestre calculado como semestre calendario desde el periodo de ingreso
 -- (no considera bajas temporales ni traslados que no inician en semestre 1)
-CREATE VIEW v_estudiantes_semestre AS
+CREATE OR REPLACE VIEW v_estudiantes_semestre AS
 SELECT
     e.id_estudiante,
     e.matricula,
@@ -228,8 +225,90 @@ JOIN carreras c ON e.id_carrera = c.id_carrera
 JOIN periodos_escolares pi ON e.id_periodo_ingreso = pi.id_periodo
 JOIN periodos_escolares pa ON pa.es_actual = 1;
 
+
+-- Ampliaciones compatibles con la versión anterior. Las filas históricas conservan su identidad.
+ALTER TABLE carrera_materia ADD COLUMN IF NOT EXISTS semestre TINYINT UNSIGNED NULL;
+UPDATE carrera_materia cm JOIN materias m USING(id_materia)
+   SET cm.semestre=m.semestre_sugerido WHERE cm.semestre IS NULL;
+ALTER TABLE materias ADD COLUMN IF NOT EXISTS posicion TINYINT UNSIGNED NOT NULL DEFAULT 0;
+
+ALTER TABLE tutor_materias ADD COLUMN IF NOT EXISTS autorizada TINYINT(1) NOT NULL DEFAULT 1;
+ALTER TABLE horario_docente ADD COLUMN IF NOT EXISTS id_periodo INT NULL;
+ALTER TABLE horario_estudiante ADD COLUMN IF NOT EXISTS id_periodo INT NULL;
+UPDATE horario_docente SET id_periodo=(SELECT id_periodo FROM periodos_escolares WHERE es_actual=1) WHERE id_periodo IS NULL;
+UPDATE horario_estudiante SET id_periodo=(SELECT id_periodo FROM periodos_escolares WHERE es_actual=1) WHERE id_periodo IS NULL;
+ALTER TABLE horario_docente ADD UNIQUE INDEX IF NOT EXISTS uq_doc_periodo (id_docente,id_periodo,dia_semana,id_bloque);
+ALTER TABLE horario_estudiante ADD UNIQUE INDEX IF NOT EXISTS uq_est_periodo (id_estudiante,id_periodo,dia_semana,id_bloque);
+ALTER TABLE horario_docente DROP INDEX IF EXISTS uq_doc_dia_blq;
+ALTER TABLE horario_estudiante DROP INDEX IF EXISTS uq_est_dia_blq;
+
+ALTER TABLE franjas_asesoria DROP CONSTRAINT IF EXISTS ck_fa_cupo;
+ALTER TABLE franjas_asesoria MODIFY cupo_maximo SMALLINT UNSIGNED NOT NULL DEFAULT 10;
+ALTER TABLE franjas_asesoria ADD COLUMN IF NOT EXISTS motivo_cancelacion VARCHAR(160) NULL;
+ALTER TABLE franjas_asesoria ADD COLUMN IF NOT EXISTS bloque_publicado INT AS (IF(estado='Publicada',id_bloque,NULL)) PERSISTENT;
+ALTER TABLE franjas_asesoria ADD UNIQUE INDEX IF NOT EXISTS uq_franja_publicada (id_docente,fecha,bloque_publicado);
+ALTER TABLE franjas_asesoria DROP INDEX IF EXISTS uq_doc_fecha_blq;
+
+ALTER TABLE reservas_asesoria ADD COLUMN IF NOT EXISTS id_materia_inscrita INT NULL;
+ALTER TABLE reservas_asesoria ADD COLUMN IF NOT EXISTS cruce_aceptado TINYINT(1) NOT NULL DEFAULT 0;
+ALTER TABLE reservas_asesoria ADD COLUMN IF NOT EXISTS confirmada TINYINT(1) NOT NULL DEFAULT 0;
+ALTER TABLE reservas_asesoria ADD COLUMN IF NOT EXISTS resultado_atencion ENUM('Cerrado','En seguimiento') NULL;
+ALTER TABLE reservas_asesoria ADD COLUMN IF NOT EXISTS anotaciones TEXT NULL;
+ALTER TABLE reservas_asesoria ADD COLUMN IF NOT EXISTS motivo_cancelacion VARCHAR(160) NULL;
+UPDATE reservas_asesoria r JOIN acuerdos a USING(id_reserva)
+   SET r.resultado_atencion=a.estado_acuerdo WHERE r.resultado_atencion IS NULL;
+UPDATE reservas_asesoria r JOIN franjas_asesoria f USING(id_franja)
+  SET r.id_materia_inscrita=f.id_materia, r.confirmada=(r.tipo_cita='Inicial') WHERE r.id_materia_inscrita IS NULL;
+ALTER TABLE reservas_asesoria ADD COLUMN IF NOT EXISTS estudiante_vigente INT AS (IF(estado_cita='Cancelada',NULL,id_estudiante)) PERSISTENT;
+ALTER TABLE reservas_asesoria ADD UNIQUE INDEX IF NOT EXISTS uq_reserva_vigente (id_franja,estudiante_vigente);
+ALTER TABLE reservas_asesoria DROP INDEX IF EXISTS uq_franja_est;
+
+ALTER TABLE horario_docente ADD CONSTRAINT fk_hd_periodo FOREIGN KEY IF NOT EXISTS fk_hd_periodo (id_periodo) REFERENCES periodos_escolares(id_periodo);
+ALTER TABLE horario_estudiante ADD CONSTRAINT fk_he_periodo FOREIGN KEY IF NOT EXISTS fk_he_periodo (id_periodo) REFERENCES periodos_escolares(id_periodo);
+ALTER TABLE reservas_asesoria ADD CONSTRAINT fk_ra_inscrita FOREIGN KEY IF NOT EXISTS fk_ra_inscrita (id_materia_inscrita) REFERENCES materias(id_materia);
+
+CREATE TABLE IF NOT EXISTS bloqueos_asesoria (
+    id_bloqueo INT AUTO_INCREMENT PRIMARY KEY,
+    id_docente INT NOT NULL,
+    desde DATE NOT NULL,
+    hasta DATE NOT NULL,
+    registrado TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_docente) REFERENCES docentes(id_docente),
+    UNIQUE KEY uq_bloqueo_docente (id_docente,desde,hasta),
+    CHECK (hasta >= desde)
+) ENGINE=InnoDB;
+
+CREATE OR REPLACE VIEW v_horario_docente_actual AS
+ SELECT h.* FROM horario_docente h JOIN periodos_escolares p USING(id_periodo)
+ JOIN docentes d USING(id_docente) WHERE p.es_actual=1 AND d.estado_laboral='Activo';
+CREATE OR REPLACE VIEW v_horario_estudiante_actual AS
+ SELECT h.* FROM horario_estudiante h JOIN periodos_escolares p USING(id_periodo) WHERE p.es_actual=1;
+
+-- Una cadena por departamento en esta demostración. Posición cero significa materia independiente.
+CREATE OR REPLACE VIEW v_materias_elegibles_tutor AS
+ SELECT DISTINCT h.id_docente,h.id_carrera,m.id_materia
+ FROM v_horario_docente_actual h JOIN docentes d USING(id_docente)
+ JOIN materias carga ON carga.id_materia=h.id_materia
+ JOIN carrera_materia cm ON cm.id_carrera=h.id_carrera
+ JOIN materias m ON m.id_materia=cm.id_materia AND m.id_departamento=d.id_departamento
+ WHERE d.estado_laboral='Activo'
+   AND (m.id_materia=carga.id_materia OR
+       (m.id_departamento=carga.id_departamento AND m.posicion>0 AND m.posicion<carga.posicion))
+   AND m.posicion <= CASE WHEN d.grado_academico IN ('Dr.','Dra.') THEN 3
+                          WHEN d.grado_academico IN ('Mtro.','Mtra.') THEN 2 ELSE 1 END;
+CREATE OR REPLACE VIEW v_materias_asesoria_estudiante AS
+ SELECT DISTINCT h.id_estudiante,h.id_materia AS id_materia_inscrita,m.id_materia
+ FROM v_horario_estudiante_actual h JOIN estudiantes e USING(id_estudiante)
+ JOIN v_estudiantes_semestre v USING(id_estudiante)
+ JOIN materias actual ON actual.id_materia=h.id_materia
+ JOIN carrera_materia carga ON carga.id_materia=actual.id_materia AND carga.id_carrera=e.id_carrera
+ JOIN carrera_materia cm ON cm.id_carrera=e.id_carrera
+ JOIN materias m ON m.id_materia=cm.id_materia
+ WHERE carga.semestre=v.semestre_actual AND (m.id_materia=actual.id_materia OR
+       (m.id_departamento=actual.id_departamento AND m.posicion>0 AND m.posicion<actual.posicion));
+
 -- Reservas que no están canceladas, lugares libres y estado calculado
-CREATE VIEW v_franjas_cupo AS
+CREATE OR REPLACE VIEW v_franjas_cupo AS
 SELECT
     f.id_franja,
     f.id_docente,
@@ -254,13 +333,26 @@ GROUP BY f.id_franja, f.id_docente, f.id_carrera, f.id_materia, f.fecha, f.id_bl
 DELIMITER $$
 
 -- Publicar franja: lunes a viernes, tutor habilitado y activo, sin chocar con sus clases
-CREATE TRIGGER trg_franjas_bi BEFORE INSERT ON franjas_asesoria
+CREATE OR REPLACE TRIGGER trg_franjas_bi BEFORE INSERT ON franjas_asesoria
 FOR EACH ROW
 BEGIN
     DECLARE v_hab TINYINT;
     DECLARE v_estado VARCHAR(20);
     DECLARE v_choque INT;
 
+    IF NEW.cupo_maximo<1 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='El cupo debe ser positivo'; END IF;
+    SELECT COUNT(*) INTO v_choque FROM v_horario_docente_actual h
+      JOIN docentes d ON d.id_docente=h.id_docente
+      JOIN materias carga ON carga.id_materia=h.id_materia
+      JOIN materias m ON m.id_materia=NEW.id_materia AND m.id_departamento=d.id_departamento
+      JOIN tutor_materias tm ON tm.id_docente=h.id_docente AND tm.id_materia=m.id_materia AND tm.autorizada=1
+      WHERE h.id_docente=NEW.id_docente AND h.id_carrera=NEW.id_carrera
+        AND m.posicion <= CASE WHEN d.grado_academico IN ('Dr.','Dra.') THEN 3 WHEN d.grado_academico IN ('Mtro.','Mtra.') THEN 2 ELSE 1 END
+        AND (carga.id_materia=m.id_materia OR (carga.id_departamento=m.id_departamento AND m.posicion>0 AND m.posicion<carga.posicion));
+    IF v_choque=0
+       OR EXISTS (SELECT 1 FROM bloqueos_asesoria WHERE id_docente=NEW.id_docente AND NEW.fecha BETWEEN desde AND hasta) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='La materia o la fecha no están disponibles para el tutor';
+    END IF;
     IF WEEKDAY(NEW.fecha) > 4 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Las franjas solo pueden publicarse de lunes a viernes';
     END IF;
@@ -272,7 +364,7 @@ BEGIN
     END IF;
 
     SELECT COUNT(*) INTO v_choque
-      FROM horario_docente
+      FROM v_horario_docente_actual
      WHERE id_docente = NEW.id_docente
        AND dia_semana + 0 = WEEKDAY(NEW.fecha) + 1
        AND id_bloque = NEW.id_bloque;
@@ -283,10 +375,10 @@ END$$
 
 -- Valida disponibilidad de la franja, carga del estudiante, cupo maximo y traslapes
 -- Bloquea la franja durante la insercion para evitar sobrecupo en reservas simultaneas
-CREATE TRIGGER trg_reservas_bi BEFORE INSERT ON reservas_asesoria
+CREATE OR REPLACE TRIGGER trg_reservas_bi BEFORE INSERT ON reservas_asesoria
 FOR EACH ROW
 BEGIN
-    DECLARE v_cupo TINYINT;
+    DECLARE v_cupo INT;
     DECLARE v_estado_franja VARCHAR(20);
     DECLARE v_fecha DATE;
     DECLARE v_bloque INT;
@@ -332,27 +424,41 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La franja no es de la carrera del estudiante';
     END IF;
 
-    SELECT COUNT(*) INTO v_choque
-      FROM horario_estudiante
-     WHERE id_estudiante = NEW.id_estudiante AND id_materia = v_materia;
+    IF NEW.id_materia_inscrita IS NULL THEN SET NEW.id_materia_inscrita=v_materia; END IF;
+    SELECT COUNT(*) INTO v_choque FROM tutor_materias
+     WHERE id_docente=v_docente AND id_materia=v_materia AND autorizada=1;
+    IF v_choque=0
+       OR EXISTS (SELECT 1 FROM bloqueos_asesoria WHERE id_docente=v_docente AND v_fecha BETWEEN desde AND hasta) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='El tutor suspendió la asesoría o dejó de tener la materia autorizada';
+    END IF;
+    IF EXISTS (SELECT 1 FROM reservas_asesoria r JOIN franjas_asesoria f USING(id_franja)
+                WHERE r.id_estudiante=NEW.id_estudiante AND f.id_materia=v_materia AND r.estado_cita='Programada') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Ya tienes una asesoría abierta de esta materia';
+    END IF;
+    SELECT COUNT(*) INTO v_choque FROM v_horario_estudiante_actual h
+      JOIN v_estudiantes_semestre est ON est.id_estudiante=h.id_estudiante
+      JOIN carrera_materia cm ON cm.id_carrera=v_car_est AND cm.id_materia=h.id_materia AND cm.semestre=est.semestre_actual
+      JOIN materias inscrita ON inscrita.id_materia=h.id_materia
+      JOIN materias asesoria ON asesoria.id_materia=v_materia
+      WHERE h.id_estudiante=NEW.id_estudiante AND h.id_materia=NEW.id_materia_inscrita
+        AND (inscrita.id_materia=asesoria.id_materia OR (inscrita.id_departamento=asesoria.id_departamento AND asesoria.posicion>0 AND asesoria.posicion<inscrita.posicion));
     IF v_choque = 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La materia no esta en la carga vigente del estudiante';
     END IF;
 
     SELECT COUNT(*) INTO v_ocupados
       FROM reservas_asesoria
-     WHERE id_franja = NEW.id_franja AND estado_cita <> 'Cancelada'
-       LOCK IN SHARE MODE;
+     WHERE id_franja = NEW.id_franja AND estado_cita <> 'Cancelada';
     IF v_ocupados >= v_cupo THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La franja ya no tiene cupo';
     END IF;
 
     SELECT COUNT(*) INTO v_choque
-      FROM horario_estudiante
+      FROM v_horario_estudiante_actual
      WHERE id_estudiante = NEW.id_estudiante
        AND dia_semana + 0 = WEEKDAY(v_fecha) + 1
        AND id_bloque = v_bloque;
-    IF v_choque > 0 THEN
+    IF v_choque > 0 AND (NEW.cruce_aceptado<>1 OR NEW.tipo_cita<>'Inicial') THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La franja choca con una clase del estudiante';
     END IF;
 
@@ -368,6 +474,11 @@ BEGIN
     END IF;
 
     IF NEW.tipo_cita = 'Seguimiento' THEN
+        IF NOT EXISTS (SELECT 1 FROM reservas_asesoria origen JOIN franjas_asesoria f USING(id_franja)
+             WHERE origen.id_reserva=NEW.id_reserva_origen AND origen.id_estudiante=NEW.id_estudiante
+               AND f.id_materia=v_materia AND origen.id_materia_inscrita=NEW.id_materia_inscrita) THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='El seguimiento debe pertenecer a la misma atención y materia';
+        END IF;
         SELECT r.estado_cita, f.id_docente, f.fecha, b.hora_inicio
           INTO v_o_estado, v_o_docente, v_o_fecha, v_o_hora
           FROM reservas_asesoria r
@@ -394,7 +505,7 @@ BEGIN
 END$$
 
 -- Un acuerdo solo se registra sobre una cita Realizada
-CREATE TRIGGER trg_acuerdos_bi BEFORE INSERT ON acuerdos
+CREATE OR REPLACE TRIGGER trg_acuerdos_bi BEFORE INSERT ON acuerdos
 FOR EACH ROW
 BEGIN
     DECLARE v_estado VARCHAR(20);
@@ -405,18 +516,51 @@ BEGIN
 END$$
 
 -- La cuenta del docente solo está activa mientras esté habilitado como tutor
-CREATE TRIGGER trg_docentes_ai AFTER INSERT ON docentes
+CREATE OR REPLACE TRIGGER trg_docentes_ai AFTER INSERT ON docentes
 FOR EACH ROW
 BEGIN
     UPDATE usuarios SET activo = NEW.habilitado_tutor WHERE id_usuario = NEW.id_usuario;
 END$$
 
-CREATE TRIGGER trg_docentes_au AFTER UPDATE ON docentes
+CREATE OR REPLACE TRIGGER trg_docentes_au AFTER UPDATE ON docentes
 FOR EACH ROW
 BEGIN
     IF NEW.habilitado_tutor <> OLD.habilitado_tutor THEN
         UPDATE usuarios SET activo = NEW.habilitado_tutor WHERE id_usuario = NEW.id_usuario;
     END IF;
+END$$
+
+CREATE OR REPLACE TRIGGER trg_hd_periodo BEFORE INSERT ON horario_docente FOR EACH ROW
+BEGIN
+    IF NEW.id_periodo IS NULL THEN SET NEW.id_periodo=(SELECT id_periodo FROM periodos_escolares WHERE es_actual=1); END IF;
+    IF NEW.id_periodo IS NULL THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Selecciona un periodo escolar vigente'; END IF;
+END$$
+CREATE OR REPLACE TRIGGER trg_he_periodo BEFORE INSERT ON horario_estudiante FOR EACH ROW
+BEGIN
+    IF NEW.id_periodo IS NULL THEN SET NEW.id_periodo=(SELECT id_periodo FROM periodos_escolares WHERE es_actual=1); END IF;
+    IF NEW.id_periodo IS NULL THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Selecciona un periodo escolar vigente'; END IF;
+END$$
+CREATE OR REPLACE TRIGGER trg_franjas_bu BEFORE UPDATE ON franjas_asesoria FOR EACH ROW
+BEGIN
+    IF NEW.cupo_maximo<1 OR (NEW.cupo_maximo<OLD.cupo_maximo AND NEW.cupo_maximo <
+       (SELECT COUNT(*) FROM reservas_asesoria WHERE id_franja=OLD.id_franja AND estado_cita<>'Cancelada')) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='El cupo debe ser positivo y cubrir los lugares apartados';
+    END IF;
+END$$
+CREATE OR REPLACE TRIGGER trg_reservas_bu BEFORE UPDATE ON reservas_asesoria FOR EACH ROW
+BEGIN
+    IF OLD.estado_cita<>'Programada' AND (
+       NEW.estado_cita<>OLD.estado_cita OR NEW.confirmada<>OLD.confirmada
+       OR NEW.id_franja<>OLD.id_franja OR NEW.id_estudiante<>OLD.id_estudiante OR NEW.tipo_cita<>OLD.tipo_cita
+       OR NOT (NEW.id_reserva_origen <=> OLD.id_reserva_origen) OR NOT (NEW.id_materia_inscrita <=> OLD.id_materia_inscrita)
+       OR NOT (NEW.resultado_atencion <=> OLD.resultado_atencion) OR NOT (NEW.anotaciones <=> OLD.anotaciones)
+       OR NEW.cruce_aceptado<>OLD.cruce_aceptado OR NOT (NEW.motivo_cancelacion <=> OLD.motivo_cancelacion)) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='La atención guardada es de solo lectura';
+    END IF;
+END$$
+CREATE OR REPLACE TRIGGER trg_acuerdos_bu BEFORE UPDATE ON acuerdos FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='El acuerdo guardado es de solo lectura';
 END$$
 
 DELIMITER ;

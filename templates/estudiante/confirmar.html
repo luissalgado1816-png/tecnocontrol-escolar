@@ -8,11 +8,13 @@
   <dt class="col-md-4">Carrera</dt><dd class="col-md-8">{{ franja.carrera }}</dd>
   <dt class="col-md-4">Fecha</dt><dd class="col-md-8">{{ franja.fecha|fecha_dia }}</dd>
   <dt class="col-md-4">Horario</dt><dd class="col-md-8">{{ franja.horario|bloque }}</dd>
-  <dt class="col-md-4">Lugares libres al consultar</dt><dd class="col-md-8">{{ libres }} de 10</dd>
+  <dt class="col-md-4">Lugares libres al consultar</dt><dd class="col-md-8">{{ libres }} de {{ franja.cupo_maximo }}</dd>
 </dl>
 <form method="post" class="d-flex gap-3 flex-wrap">
   <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <input type="hidden" name="inscrita" value="{{ inscrita }}">
+  {% if cruce %}<div class="alert alert-warning w-100"><label><input type="checkbox" name="aceptar_cruce" value="1" required> Esta franja coincide con mi horario de clases. Acepto reservar bajo mi responsabilidad.</label></div>{% endif %}
   <button class="btn btn-primary">Confirmar reserva</button>
-  <a class="btn btn-outline-secondary" href="{{ url_for('estudiante.reservar',materia=franja.id_materia) }}">Volver a la oferta</a>
+  <a class="btn btn-outline-secondary" href="{{ regreso }}">Volver a la oferta</a>
 </form>
 {% endblock %}

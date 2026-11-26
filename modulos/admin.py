@@ -16,7 +16,7 @@ DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
 CICLOS = ["Enero-Junio", "Agosto-Diciembre"]
 TIPOS_INGRESO = ["Regular", "Cambio de carrera", "Traslado"]
 ESTADOS_ESCOLARES = ["Inscrito", "Baja temporal", "Baja total"]
-GRADOS = ["Ing.", "Mtro.", "Mtra.", "Dr.", "Dra."]
+GRADOS = ["Ing.", "Mtro.", "Dr."]
 ESTADOS_LABORALES = ["Activo", "Investigación", "Sabático"]
 # Prefijo del número de control según el tipo de ingreso (nota del wireframe)
 PREFIJO_INGRESO = {"Regular": "", "Cambio de carrera": "C", "Traslado": "T"}
@@ -48,12 +48,14 @@ def _periodo_vigente():
 
 def _catalogos():
     materias = db.query(
-        "SELECT m.id_materia, m.nombre, m.id_departamento, GROUP_CONCAT(cm.id_carrera) AS carreras "
+        "SELECT m.id_materia, m.nombre, m.clave_oficial, m.posicion, m.id_departamento, "
+        "GROUP_CONCAT(CONCAT(cm.id_carrera, ':', cm.semestre)) AS planes "
         "FROM materias m JOIN carrera_materia cm ON cm.id_materia = m.id_materia "
-        "GROUP BY m.id_materia, m.nombre, m.id_departamento ORDER BY m.nombre"
+        "GROUP BY m.id_materia, m.nombre,m.clave_oficial,m.posicion,m.id_departamento ORDER BY m.nombre"
     )
     for materia in materias:
-        materia["carreras"] = [int(c) for c in materia["carreras"].split(",")]
+        materia["planes"] = {int(c):int(s) for c,s in (par.split(":") for par in materia["planes"].split(","))}
+        materia["carreras"] = list(materia["planes"])
     return {
         "carreras": db.query("SELECT id_carrera, nombre FROM carreras WHERE activa = 1 ORDER BY nombre"),
         "departamentos": db.query("SELECT id_departamento, nombre FROM departamentos ORDER BY nombre"),
@@ -70,7 +72,7 @@ def _datos_horario(cat, modo, filas):
         "filas": filas,
         "dias": DIAS,
         "materias": [
-            {"id": m["id_materia"], "nombre": m["nombre"], "carreras": m["carreras"], "depto": m["id_departamento"]}
+            {"id": m["id_materia"], "nombre": m["nombre"], "planes": m["planes"], "carreras": m["carreras"], "depto": m["id_departamento"], "pos": m["posicion"], "clave": m["clave_oficial"]}
             for m in cat["materias"]
         ],
         "bloques": [{"id": b["id_bloque"], "etiqueta": b["etiqueta"]} for b in cat["bloques"]],
@@ -105,7 +107,7 @@ def _leer_filas(form, con_carrera):
     return filas
 
 
-def _validar_filas(filas, cat, errores, carrera_estudiante=None, con_carrera=False, depto_docente=None):
+def _validar_filas(filas, cat, errores, carrera_estudiante=None, con_carrera=False, depto_docente=None, semestre=None, grado=None):
     """Revisa el horario: materia válida para la carrera (y departamento), sin dos clases a la misma hora."""
     materias = {m["id_materia"]: m for m in cat["materias"]}
     bloques = {b["id_bloque"]: b["etiqueta"] for b in cat["bloques"]}
@@ -121,6 +123,12 @@ def _validar_filas(filas, cat, errores, carrera_estudiante=None, con_carrera=Fal
             return
         if depto_docente is not None and materia["id_departamento"] != depto_docente:
             errores.append(f"«{materia['nombre']}» no es del departamento del docente.")
+            return
+        if semestre is not None and materia["planes"][carrera] != semestre:
+            errores.append(f"«{materia['nombre']}» corresponde a otro semestre de esta carrera.")
+            return
+        if grado and materia["posicion"] > reglas.nivel(grado):
+            errores.append("El grado académico no permite asignar esa posición de la cadena.")
             return
         clave = (fila["dia"], fila["bloque"])
         if clave in vistos:
@@ -246,7 +254,8 @@ def _validar_estudiante(form, filas, cat, actual, errores):
         errores.append("El periodo de ingreso no puede ser posterior al periodo vigente.")
 
     _validar_acceso(form, actual is None, errores, actual["id_usuario"] if actual else None)
-    _validar_filas(filas, cat, errores, carrera_estudiante=form["id_carrera"])
+    semestre = _semestre(anio, form["ciclo"], cat["periodo"]) if anio and form["ciclo"] in CICLOS and cat["periodo"] else None
+    _validar_filas(filas, cat, errores, carrera_estudiante=form["id_carrera"], semestre=semestre)
 
 
 def _id_periodo(anio, ciclo):
@@ -290,7 +299,7 @@ def _guardar_estudiante(form, filas, actual):
             db.execute("UPDATE usuarios SET username = %s, correo_institucional = %s WHERE id_usuario = %s", (form['matricula'], correo, actual["id_usuario"]))
             if clave:
                 db.execute("UPDATE usuarios SET password_hash = %s WHERE id_usuario = %s", (clave, actual["id_usuario"]))
-            db.execute("DELETE FROM horario_estudiante WHERE id_estudiante = %s", (id_estudiante,))
+            db.execute("DELETE FROM horario_estudiante WHERE id_estudiante = %s AND id_periodo=(SELECT id_periodo FROM periodos_escolares WHERE es_actual=1)", (id_estudiante,))
         for fila in _ordenar(filas):
             db.execute(
                 "INSERT INTO horario_estudiante (id_estudiante, id_materia, dia_semana, id_bloque) VALUES (%s, %s, %s, %s)",
@@ -341,7 +350,7 @@ def _ficha_estudiante(id_estudiante):
         }
         filas = [
             {"materia": h["id_materia"], "dia": h["dia_semana"], "bloque": h["id_bloque"]}
-            for h in db.query("SELECT id_materia, dia_semana, id_bloque FROM horario_estudiante WHERE id_estudiante = %s", (id_estudiante,))
+            for h in db.query("SELECT id_materia, dia_semana, id_bloque FROM v_horario_estudiante_actual WHERE id_estudiante = %s", (id_estudiante,))
         ]
     else:
         form = {
@@ -369,9 +378,9 @@ def docentes():
     filas = db.query(
         "SELECT d.id_docente, d.clave_docente, CONCAT_WS(' ', d.nombres, d.apellido_paterno, d.apellido_materno) AS nombre, "
         "d.grado_academico, d.estado_laboral, dep.nombre AS departamento, "
-        "(SELECT GROUP_CONCAT(DISTINCT m.nombre) FROM horario_docente h "
+        "(SELECT GROUP_CONCAT(DISTINCT m.nombre) FROM v_horario_docente_actual h "
         "   JOIN materias m ON m.id_materia = h.id_materia WHERE h.id_docente = d.id_docente) AS materias, "
-        "(SELECT GROUP_CONCAT(DISTINCT c.nombre) FROM horario_docente h "
+        "(SELECT GROUP_CONCAT(DISTINCT c.nombre) FROM v_horario_docente_actual h "
         "   JOIN carreras c ON c.id_carrera = h.id_carrera WHERE h.id_docente = d.id_docente) AS carreras "
         "FROM docentes d JOIN departamentos dep ON dep.id_departamento = d.id_departamento "
         "WHERE d.clave_docente LIKE %s AND d.apellido_paterno LIKE %s "
@@ -429,7 +438,7 @@ def _validar_docente(form, filas, cat, actual, errores):
         errores.append("Captura el apellido paterno y los nombres.")
     if len(form["ap_paterno"]) > 60 or len(form["ap_materno"]) > 60 or len(form["nombres"]) > 80:
         errores.append("Algún nombre o apellido es demasiado largo.")
-    if form["grado"] not in GRADOS:
+    if form["grado"] not in GRADOS and form["grado"] != (actual or {}).get("grado_academico"):
         errores.append("Selecciona el grado académico.")
     if form["estado_laboral"] not in ESTADOS_LABORALES:
         errores.append("Selecciona el estado laboral.")
@@ -438,7 +447,11 @@ def _validar_docente(form, filas, cat, actual, errores):
         errores.append("Selecciona el departamento.")
 
     _validar_acceso(form, actual is None, errores, actual["id_usuario"] if actual else None)
-    _validar_filas(filas, cat, errores, con_carrera=True, depto_docente=form["id_departamento"])
+    if actual and (form["password"] or form["confirmar"]):
+        errores.append("Utiliza Restablecer contraseña para cambiar el acceso de un docente registrado.")
+    if form["estado_laboral"] != "Activo" and filas:
+        errores.append("El horario debe quedar vacío en Investigación o Sabático.")
+    _validar_filas(filas, cat, errores, con_carrera=True, depto_docente=form["id_departamento"],grado=form["grado"])
 
 
 def _guardar_docente(form, filas, actual):
@@ -464,6 +477,9 @@ def _guardar_docente(form, filas, actual):
             )
         else:
             id_docente = actual["id_docente"]
+            if form["estado_laboral"] != "Activo":
+                reglas.cancelar_franjas(id_docente,"Cambio de estado laboral del docente")
+                db.execute("UPDATE docentes SET habilitado_tutor=0 WHERE id_docente=%s",(id_docente,))
             db.execute(
                 "UPDATE docentes SET apellido_paterno = %s, apellido_materno = %s, nombres = %s, grado_academico = %s, "
                 "estado_laboral = %s, id_departamento = %s WHERE id_docente = %s",
@@ -473,12 +489,15 @@ def _guardar_docente(form, filas, actual):
             db.execute("UPDATE usuarios SET correo_institucional = %s WHERE id_usuario = %s", (correo, actual["id_usuario"]))
             if clave:
                 db.execute("UPDATE usuarios SET password_hash = %s WHERE id_usuario = %s", (clave, actual["id_usuario"]))
-            db.execute("DELETE FROM horario_docente WHERE id_docente = %s", (id_docente,))
+            db.execute("DELETE FROM horario_docente WHERE id_docente = %s AND id_periodo=(SELECT id_periodo FROM periodos_escolares WHERE es_actual=1)", (id_docente,))
         for fila in _ordenar(filas):
             db.execute(
                 "INSERT INTO horario_docente (id_docente, id_carrera, id_materia, dia_semana, id_bloque) VALUES (%s, %s, %s, %s, %s)",
                 (id_docente, fila["carrera"], fila["materia"], fila["dia"], fila["bloque"]),
             )
+
+        if actual:
+            reglas.sincronizar_perfil(id_docente)
 
 
 def _ficha_docente(id_docente):
@@ -527,7 +546,7 @@ def _ficha_docente(id_docente):
         }
         filas = [
             {"materia": h["id_materia"], "carrera": h["id_carrera"], "dia": h["dia_semana"], "bloque": h["id_bloque"]}
-            for h in db.query("SELECT id_materia, id_carrera, dia_semana, id_bloque FROM horario_docente WHERE id_docente = %s", (id_docente,))
+            for h in db.query("SELECT id_materia, id_carrera, dia_semana, id_bloque FROM v_horario_docente_actual WHERE id_docente = %s", (id_docente,))
         ]
     else:
         form = {
@@ -541,6 +560,21 @@ def _ficha_docente(id_docente):
     usuario_acceso = actual["username"] if actual else _siguiente_usuario_docente()
     return render_template(
         "admin/docente_ficha.html", form=form, errores=errores, actual=actual, cat=cat,
-        grados=GRADOS, estados=ESTADOS_LABORALES, usuario_acceso=usuario_acceso,
+        grados=GRADOS + ([actual["grado_academico"]] if actual and actual["grado_academico"] not in GRADOS else []), estados=ESTADOS_LABORALES, usuario_acceso=usuario_acceso,
         datos_horario=_datos_horario(cat, "docente", filas),
     )
+
+
+@bp.post('/docentes/<int:id_docente>/restablecer')
+@rol_requerido(ROL)
+def restablecer_docente(id_docente):
+    nueva = request.form.get('nueva','')
+    if len(nueva) < MIN_PASSWORD or nueva != request.form.get('repetir'):
+        flash('Las contraseñas deben coincidir y tener al menos ocho caracteres.', 'warning')
+    else:
+        with db.transaction():
+            docente = reglas.bloquear_docente(id_docente)
+            db.execute('UPDATE usuarios SET password_hash=%s WHERE id_usuario=%s',
+                       (generate_password_hash(nueva,method='scrypt'),docente['id_usuario']))
+        flash('Contraseña restablecida.', 'success')
+    return redirect(url_for('admin.docentes_ficha',id_docente=id_docente))

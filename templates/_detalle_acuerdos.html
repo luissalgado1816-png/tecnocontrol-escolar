@@ -1,8 +1,5 @@
-{% for r in filas if r.id_acuerdo %}
-<section class="bloque-horario mt-3" aria-label="Acuerdo de la cita {{ r.id_reserva }}">
-  <h2 class="h6">{{ 'Acuerdo en seguimiento' if r.estado_acuerdo == 'En seguimiento' else 'Acuerdo cerrado' }}</h2>
-  <p class="text-muted mb-2">{{ r.fecha|fecha_dia }} · {{ r.horario|bloque }} · {{ r.materia }}</p>
-  <p class="texto-acuerdo">{{ r.descripcion_acuerdo }}</p>
-  {% if r.siguiente_id %}<p class="mb-0">{{ 'Próxima asesoría' if r.siguiente_estado == 'Programada' else 'Cita de seguimiento' }} · {{ r.siguiente_fecha|fecha_dia }} · {{ r.siguiente_horario|bloque }} · {{ r.docente }}{% if r.siguiente_estado != 'Programada' %} · {{ r.siguiente_estado }}{% endif %}</p>{% endif %}
-</section>
-{% endfor %}
+{% for grupo in grupos %}<section class="bloque-horario mt-3"><h2>{{ grupo[0].materia }} · {{ grupo[0].fecha|fecha }} · {{ grupo[0].docente }}</h2>
+{% for r in grupo %}<article class="{{ 'border-top pt-2 mt-2' if not loop.first }}"><h3 class="h6">{{ 'Asesoría inicial' if r.tipo_cita=='Inicial' else 'Seguimiento '+(loop.index0|string) }} · {{ r.fecha|fecha_dia }} · {{ r.horario|bloque }}</h3>
+<p class="mb-1">{{ r.estado_cita|replace('No asistio','No asistió') }}{% if r.estado_cita=='Programada' %} · {{ 'Confirmada' if r.confirmada else 'Pendiente · cupo apartado' }}{% endif %}{% if r.estado_acuerdo %} · {{ r.estado_acuerdo }}{% endif %}{% if r.motivo_cancelacion %} · {{ r.motivo_cancelacion }}{% endif %}</p>
+{% if r.descripcion_acuerdo %}<p class="texto-acuerdo">{{ r.descripcion_acuerdo }}</p>{% endif %}
+</article>{% endfor %}</section>{% endfor %}

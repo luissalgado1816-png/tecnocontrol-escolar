@@ -1,68 +1,14 @@
-{# Editor del horario base. Variables: modo ('estudiante' o 'docente'), datos_horario, cat, periodo (opcional) #}
-<div class="bloque-horario mb-3">
-  <h2 class="h6">Horario base de clases del {{ 'estudiante' if modo == 'estudiante' else 'docente' }}</h2>
-  {% if modo == 'estudiante' and periodo %}
-  <p class="text-muted small mb-2">Periodo vigente · {{ periodo.ciclo|replace('-', '–') }} {{ periodo.anio }}</p>
-  {% elif modo == 'docente' %}
-  <p class="text-muted small mb-2">Carrera y departamento determinan las materias que pueden asignarse a la clase.</p>
-  {% endif %}
-
+<section class="bloque-horario mb-3" aria-labelledby="titulo-horario">
+  <h2 class="h6" id="titulo-horario">Horario base de clases del {{ modo }}{% if cat.periodo %} · {{ cat.periodo.ciclo }} {{ cat.periodo.anio }}{% endif %}</h2>
+  <p class="text-muted small">{{ 'Carrera, departamento y grado académico determinan las materias disponibles.' if modo == 'docente' else 'Las materias corresponden a la carrera y al semestre calculado.' }}</p>
   <div class="row g-2 align-items-end">
-    {% if modo == 'docente' %}
-    <div class="col-md-3">
-      <label for="ed-carrera" class="form-label">Carrera</label>
-      <select id="ed-carrera" class="form-select">
-        {% for c in cat.carreras %}<option value="{{ c.id_carrera }}">{{ c.nombre }}</option>{% endfor %}
-      </select>
-    </div>
-    {% endif %}
-    <div class="col-md">
-      <label for="ed-materia" class="form-label">Materia</label>
-      <select id="ed-materia" class="form-select"></select>
-    </div>
-    <div class="col-md-2">
-      <label for="ed-dia" class="form-label">Día</label>
-      <select id="ed-dia" class="form-select"><option value="">Selecciona día</option></select>
-    </div>
-    <div class="col-md-2">
-      <label for="ed-bloque" class="form-label">Hora</label>
-      <select id="ed-bloque" class="form-select"><option value="">Selecciona bloque</option></select>
-    </div>
-    <div class="col-auto">
-      <button type="button" id="ed-agregar" class="btn btn-outline-primary">Agregar</button>
-    </div>
+    {% if modo == 'docente' %}<div class="col-md-4"><label for="ed-carrera" class="form-label">Carrera</label><select id="ed-carrera" class="form-select">{% for c in cat.carreras %}<option value="{{ c.id_carrera }}">{{ c.nombre }}</option>{% endfor %}</select></div>{% endif %}
+    <div class="col-md-6"><label for="ed-materia" class="form-label">Materia</label><select id="ed-materia" class="form-select"></select></div>
   </div>
-  <div id="ed-aviso" class="alert alert-warning py-2 mt-2 mb-0 d-none" role="alert"></div>
-
-  <div class="table-responsive mt-3">
-    <table class="table table-sm align-middle mb-0">
-      <thead>
-        <tr>
-          <th>Día</th><th>Horario</th><th>Materia</th>{% if modo == 'docente' %}<th>Carrera</th>{% endif %}<th>Acción</th>
-        </tr>
-      </thead>
-      <tbody id="ed-cuerpo"></tbody>
-    </table>
-  </div>
-  <p id="ed-vacio" class="text-muted small mb-0 d-none">Aún no hay clases en el horario.</p>
-</div>
-
+  <p id="ed-aviso" role="status" class="small mt-2 mb-1"></p>
+  <div id="ed-calendario" class="table-responsive"></div>
+  <h3 class="h6 mt-3">Concentrado del horario</h3>
+  <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Día</th><th>Horario</th><th>Materia</th>{% if modo == 'docente' %}<th>Carrera</th>{% endif %}<th>Acción</th></tr></thead><tbody id="ed-cuerpo"></tbody></table></div>
+  <p id="ed-vacio" class="text-muted small">Aún no hay clases en el horario.</p>
+</section>
 <script type="application/json" id="datos-horario">{{ datos_horario|tojson }}</script>
-
-<div class="modal fade" id="modalQuitar" tabindex="-1" aria-labelledby="tituloQuitar" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-body"><p class="fw-semibold mb-0" id="tituloQuitar">¿Quitar este bloque de clase?</p></div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-danger" id="confirmar-quitar">Quitar bloque</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="toast-container position-fixed bottom-0 end-0 p-3" aria-live="polite">
-  <div id="aviso-horario" class="toast" role="status" aria-atomic="true">
-    <div class="toast-body">Materia agregada al horario. Guarda la ficha para conservar los cambios.</div>
-  </div>
-</div>

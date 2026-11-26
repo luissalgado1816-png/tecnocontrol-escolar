@@ -8,7 +8,7 @@
   <div class="col-md-3"><label class="form-label" for="hasta">Hasta</label><input class="form-control" type="date" name="hasta" id="hasta" value="{{ hasta }}" required></div>
   <div class="col-md-auto"><button class="btn btn-primary">Generar reporte</button></div>
 </form>
-<div class="table-responsive"><table class="table align-middle"><thead><tr><th>N.º de control</th><th>Estudiante</th><th>Fecha</th><th>Horario</th><th>Materia</th><th>Cita</th><th>Acuerdo</th></tr></thead>
-<tbody>{% for r in filas %}<tr><td>{{ r.matricula }}</td><td>{{ r.estudiante }}</td><td>{{ r.fecha|fecha }}</td><td>{{ r.horario|bloque }}</td><td>{{ r.materia }}</td><td>{{ r.estado_cita }}</td><td>{{ r.estado_acuerdo or '—' }}</td></tr>
-{% else %}<tr><td colspan="7">No hay asesorías para el rango seleccionado.</td></tr>{% endfor %}</tbody></table></div>
+<div class="table-responsive"><table class="table align-middle"><thead><tr><th>N.º de control</th><th>Estudiante</th><th>Fecha</th><th>Horario</th><th>Materia</th><th>Tipo</th><th>Cita</th><th>Acuerdo</th></tr></thead>
+<tbody>{% for r in filas %}<tr><td>{{ r.matricula }}</td><td>{{ r.estudiante }}</td><td>{{ r.fecha|fecha }}</td><td>{{ r.horario|bloque }}</td><td>{{ r.materia }}</td><td>{{ r.tipo_cita }}</td><td>{{ r.estado_cita|replace('No asistio','No asistió') }}</td><td>{% if r.estado_cita!='Programada' %}<a href="{{ url_for('tutor.acuerdo',id_reserva=r.id_reserva,de='reportes',desde=desde,hasta=hasta) }}">{{ r.estado_acuerdo or 'Ver atención' }}</a>{% else %}Pendiente de atención{% endif %}</td></tr>
+{% else %}<tr><td colspan="8">No hay asesorías para el rango seleccionado.</td></tr>{% endfor %}</tbody></table></div>
 {% endblock %}

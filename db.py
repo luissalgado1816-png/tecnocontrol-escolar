@@ -20,6 +20,7 @@ def get_db():
             collation="utf8mb4_unicode_ci",
             cursorclass=DictCursor,
             autocommit=False,
+            init_command="SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED",
             connect_timeout=5,
         )
         if cfg.get("DB_SOCKET"):

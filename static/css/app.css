@@ -20,7 +20,7 @@
   --aviso-borde: #b58522;
   --exito-fondo: #edf7f1;
   --exito-texto: #1d5c3f;
-  --exito-borde: #4a8a63;
+  --exito-borde: #275539;
   --bs-body-color: var(--texto);
   --bs-body-bg: var(--fondo);
   --bs-secondary-color: var(--texto-secundario);
@@ -92,3 +92,53 @@ body:not(.pagina-acceso) main h2 { font-size: 1.05rem; font-weight: 700; }
 /* M2 · Confirmaciones de guardado; M3–M5 reutilizan este mismo aviso. */
 .aviso-exito { background: #e5f3e9; color: #20552f; border: 1px solid #91b69b; }
 .texto-acuerdo { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.tabla-semanal {table-layout:fixed;width:100%;min-width:610px;margin:0}
+.tabla-semanal th:first-child {width:7rem;white-space:nowrap}
+.tabla-semanal th {text-align:center;vertical-align:middle;white-space:pre-line}
+.tabla-semanal td {padding:0;border:1px solid #c0ccda;vertical-align:middle}
+.celda-agenda {display:flex;align-items:center;justify-content:center;width:100%;min-height:2.65rem;height:100%;padding:.28rem;border:0;background:white;color:#16324b;text-align:center;white-space:pre-line;font:inherit;font-size:.87rem;line-height:1.18;overflow-wrap:anywhere}
+button.celda-agenda:hover,button.celda-agenda:focus-visible {outline:2px solid #1c4266;outline-offset:-2px;background:#e8f3fc}
+
+/* Estados base de la agenda */
+.clase-agenda {background:#e2eaf0}
+.oferta-agenda {background:#b5e3f5; box-shadow: inset 0 0 0 2px #4391b8}
+.cerrada-agenda {background:#eaecee;color:#50565b}
+.cita-agenda {background:#d2e7d6}
+
+/* Cancelada previamente + Vuelve a estar disponible (Marco gris afuera, azul adentro) */
+.cerrada-agenda.oferta-agenda {
+  background: #b5e3f5;
+  color: #16324b;
+  box-shadow: inset 0 0 0 5px #95a5a6;
+}
+.cita-agenda.oferta-agenda {
+  background: #d2e7d6;
+  box-shadow: inset 0 0 0 5px #2e86c1;
+}
+
+/* Clase propia (Verde pastel para mejor lectura) */
+.celda-agenda.clase-agenda-propia,
+button.celda-agenda.clase-agenda-propia:is(:hover, :focus-visible) {
+  background-color: #c8f0cc;
+  box-shadow: inset 0 0 0 2px #38b840;
+}
+
+/* Choque de clase propia + Disponible (Marco azul grueso afuera, verde adentro) */
+.clase-agenda-propia.oferta-agenda,
+button.celda-agenda.clase-agenda-propia.oferta-agenda:is(:hover, :focus-visible) {
+  background-color: #c8f0cc;
+  box-shadow: inset 0 0 0 5px #2e86c1;
+}
+
+.clase-agenda-propia.cerrada-agenda { box-shadow: inset 0 0 0 4px #66717a; }
+.clase-agenda-propia.cita-agenda { box-shadow: inset 0 0 0 4px var(--exito-borde); }
+
+.celda-agenda[data-tono="0"] {background:#fff2ac}.celda-agenda[data-tono="1"] {background:#b5e3f5}.celda-agenda[data-tono="2"] {background:#d9ead1}.celda-agenda[data-tono="3"] {background:#eadcf3}
+.sel-agenda,.rel-activa,.fila-elegida {outline:2px solid #17496b;outline-offset:-2px}
+tr.fila-elegida>td,tr.rel-activa>td {background:#d8eaf6}
+.agenda-semanas {display:flex;gap:.5rem;flex-wrap:wrap;margin:.65rem 0}
+.agenda-dos {display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:1rem}
+.agenda-dos .tabla-semanal {min-width:515px}.agenda-dos .tabla-semanal th:first-child {width:6rem}
+@media(max-width:1000px){.agenda-dos {grid-template-columns:1fr}}
+

@@ -3,20 +3,31 @@
 {% block contenido %}
 <h1 class="h4 mb-3">Mis franjas</h1>
 {% include '_errores.html' %}
+{% if not elegida %}
+<a href="{{ url_for('tutor.disponibilidad') }}" class="btn btn-outline-secondary float-end">Administrar disponibilidad</a>
 <form method="get" class="row g-3 align-items-end mb-4">
-  <div class="col-md-3"><label class="form-label" for="fecha">Fecha</label><input class="form-control" type="date" id="fecha" name="fecha" value="{{ fecha }}" required></div>
+  <div class="col-md-3"><label class="form-label" for="fecha">Desde</label><input class="form-control" type="date" id="fecha" name="desde" value="{{ desde }}" required></div>
+  <div class="col-md-3"><label class="form-label" for="hasta">Hasta (opcional)</label><input class="form-control" type="date" id="hasta" name="hasta" value="{{ hasta }}"></div>
   <div class="col-md-auto"><button class="btn btn-primary">Consultar</button></div>
 </form>
 <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Fecha</th><th>Horario</th><th>Materia</th><th>Reservas</th><th>Estudiantes</th></tr></thead>
-<tbody>{% for f in filas %}<tr><td>{{ f.fecha|fecha }}</td><td>{{ f.horario|bloque }}</td><td>{{ f.materia }}</td><td>{{ f.reservas_activas }} de 10</td>
-<td><a class="btn btn-primary btn-sm" href="{{ url_for('tutor.franjas',fecha=fecha,franja=f.id_franja) }}">Ver estudiantes</a></td></tr>
-{% else %}<tr><td colspan="5">No hay franjas para la fecha seleccionada.</td></tr>{% endfor %}</tbody></table></div>
-{% if elegida %}
-<h2 class="h6 mt-4">Estudiantes del {{ elegida.fecha|fecha }} · {{ elegida.horario|bloque }}</h2>
-<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Número de control</th><th>Estudiante</th><th>Estado</th><th>Acción</th></tr></thead>
-<tbody>{% for r in citas %}<tr><td>{{ r.matricula }}</td><td>{{ r.estudiante }}</td><td>{{ r.estado_cita }}</td><td>
-{% if r.id_acuerdo or r.estado_cita in ['Programada','Realizada'] %}<a class="btn btn-primary btn-sm" href="{{ url_for('tutor.acuerdo',id_reserva=r.id_reserva) }}">{{ 'Ver acuerdo' if r.id_acuerdo else 'Registrar atención' }}</a>
-{% else %}<button class="btn btn-secondary btn-sm" disabled>{{ r.estado_cita }}</button>{% endif %}</td></tr>
-{% else %}<tr><td colspan="4">Aún no hay estudiantes con reserva en esta franja.</td></tr>{% endfor %}</tbody></table></div>
+<tbody>{% for f in filas %}<tr><td>{{ f.fecha|fecha }}</td><td>{{ f.horario|bloque }}</td><td>{{ f.materia }}</td><td>{{ f.reservas_activas }} de {{ f.cupo_maximo }}{% if f.estado_visible=="Cancelada" %} · Cancelada{% endif %}</td>
+<td><a class="btn btn-primary btn-sm" href="{{ url_for('tutor.franjas',desde=desde,hasta=hasta or none,franja=f.id_franja) }}">Ver estudiantes</a></td></tr>
+{% else %}<tr><td colspan="5">{{ 'Corrige las fechas para consultar.' if errores else 'No hay franjas para el rango seleccionado.' if hasta and hasta != desde else 'No hay franjas para la fecha seleccionada.' }}</td></tr>{% endfor %}</tbody></table></div>
+{% else %}
+<h2 class="h6 mt-4">Estudiantes del {{ elegida.fecha|fecha }} · {{ elegida.horario|bloque }} · {{ elegida.materia }}</h2>
+<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Número de control</th><th>Estudiante</th><th>Tipo</th><th>Estado</th><th>Atención</th><th>Cita</th></tr></thead>
+<tbody>{% for r in citas %}<tr><td>{{ r.matricula }}</td><td>{{ r.estudiante }}</td><td>{{ r.tipo_cita }}</td><td>{{ r.estado_cita|replace('No asistio','No asistió') }}</td><td>
+<a class="btn btn-primary btn-sm" href="{{ url_for('tutor.acuerdo',id_reserva=r.id_reserva,desde=desde,hasta=hasta or none) }}">{{ 'Registrar atención' if r.estado_cita=='Programada' else 'Ver atención' }}</a>
+</td><td>{% if r.estado_cita=='Programada' %}<button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelar-{{ r.id_reserva }}">Cancelar</button>{% endif %}</td></tr>
+{% else %}<tr><td colspan="6">Aún no hay estudiantes con reserva en esta franja.</td></tr>{% endfor %}</tbody></table></div>
+{% for r in citas if r.estado_cita=='Programada' %}
+<div id="cancelar-{{ r.id_reserva }}" class="modal fade" tabindex="-1" aria-labelledby="titulo-cancelar-{{ r.id_reserva }}"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h2 id="titulo-cancelar-{{ r.id_reserva }}">Cancelar asesoría</h2></div>
+  <div class="modal-body"><p>¿Cancelar la asesoría de {{ r.estudiante }}?</p><p>{{ r.fecha|fecha }} · {{ r.horario|bloque }} · {{ r.materia }}</p><p>Al confirmar, la cita pasará a Cancelada y se liberará un lugar.</p></div>
+  <form class="modal-footer" method="post" action="{{ url_for('tutor.cancelar',id_reserva=r.id_reserva,desde=desde,hasta=hasta or none) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button><button class="btn btn-outline-danger">Confirmar cancelación</button></form>
+</div></div></div>{% endfor %}
+<a class="btn btn-outline-secondary" href="{{ url_for('tutor.franjas',desde=desde,hasta=hasta or none) }}">Volver a Mis franjas</a>
 {% endif %}
 {% endblock %}

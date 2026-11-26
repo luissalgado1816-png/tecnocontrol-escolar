@@ -1,163 +1,109 @@
 # TecnoControl Escolar
 
-Proyecto académico de un sistema web para la gestión de asesorías escolares del Instituto Tecnológico de Zacatepec. Utiliza Python, Flask, PyMySQL y MariaDB, con plantillas Jinja2 y Bootstrap incluido en el proyecto.
-
-## Estado actual
-
-| Módulo | Contenido | Estado |
-| --- | --- | --- |
-| 1 | Inicio y cierre de sesión, acceso por perfil y restablecimiento de contraseña | Implementado |
-| 2 | Administración de estudiantes y docentes, fichas y horarios base | Implementado |
-| 3 | Coordinación de Tutorías: habilitación, perfiles, franjas, historial y reporte general | Implementado |
-| 4 | Reservas e historial del estudiante | Implementado |
-| 5 | Atención, acuerdos, seguimiento y reporte del tutor | Implementado |
-
-Esta versión contiene los módulos 1, 2, 3, 4 y 5. Incluye el acceso por perfil, la administración de fichas y horarios, la coordinación de asesorías, las reservas del estudiante y la atención, acuerdos, seguimiento y reporte del tutor.
-
-Los estados describen el código implementado. La comprobación funcional integral con MariaDB en el equipo de demostración está pendiente.
-
-## Requisitos
-
-- Python 3.14.
-- MariaDB 10.4.32, incluido en XAMPP.
-- Un navegador Firefox o Microsoft Edge.
-- Dependencias indicadas en `requirements.txt`, entre ellas Flask 3.1.3 y PyMySQL 1.2.4.
-- Puerto local 3306 para MariaDB y puerto 5000 para la aplicación Flask.
-
-Bootstrap está incluido en `static/vendor/bootstrap/`; los estilos y scripts se sirven desde el propio proyecto. Flask sirve la aplicación web. Apache solo es necesario si se utiliza phpMyAdmin para administrar la base de datos.
+Aplicación de gestión de asesorías del Instituto Tecnológico de Zacatepec. Los cinco módulos del proyecto comparten los horarios de clases, las franjas publicadas y el historial de cada atención. La aplicación utiliza Flask, PyMySQL, MariaDB y Bootstrap local.
 
 ## Instalación en Windows
 
-### 1. Preparar el proyecto
+Utilizar Python 3.14, XAMPP con MariaDB 10.4.32 y una terminal **CMD**. Descargar o clonar el proyecto y abrir en VS Code la carpeta que contiene `app.py`. Los comandos siguientes se ejecutan desde esa carpeta. Las rutas de XAMPP corresponden a su instalación predeterminada.
 
-Descarga el repositorio y descomprímelo. Abre en VS Code la carpeta que contiene `app.py`, `requirements.txt` y los scripts SQL.
+1. Iniciar **MySQL** desde el panel de XAMPP. La aplicación utiliza `127.0.0.1`, puerto `3306`, con la cuenta local predeterminada de XAMPP.
+2. Crear o actualizar las tablas, vistas y reglas de la base de datos.
 
-### 2. Crear y cargar la base de datos
+   ```bat
+   "C:\xampp\mysql\bin\mysql.exe" -u root < database.sql
+   ```
 
-Inicia MySQL desde el panel de XAMPP. En Database Client de VS Code o en phpMyAdmin, ejecuta los scripts completos en este orden:
+3. Cargar las retículas y los datos de demostración.
 
-1. `database.sql`: crea la base `tecnocontrol_escolar`, las 16 tablas, las dos vistas y los cinco triggers.
-2. `semilladml.sql`: carga los catálogos y los datos de demostración.
+   ```bat
+   "C:\xampp\mysql\bin\mysql.exe" -u root < semilladml.sql
+   ```
 
-**Esta carga corresponde a una instalación nueva.** `database.sql` elimina y vuelve a crear la base de datos. Si la aplicación ya está instalada, conserva la base existente al incorporar los módulos siguientes; estas actualizaciones utilizan el mismo esquema.
+4. Crear el entorno de Python del proyecto.
 
-### 3. Preparar el entorno de Python
+   ```bat
+   python -m venv venv
+   ```
 
-Abre una terminal CMD en la carpeta principal del proyecto y ejecuta:
+5. Activar el entorno. En CMD aparece `(venv)` al inicio de la línea.
 
-```bat
-python -m venv venv
-venv\Scripts\activate.bat
-python -m pip install -r requirements.txt
-```
+   ```bat
+   venv\Scripts\activate.bat
+   ```
 
-### 4. Revisar la conexión
+6. Instalar las dependencias.
 
-La configuración de `config.py` utiliza estos valores predeterminados:
+   ```bat
+   python -m pip install -r requirements.txt
+   ```
 
-| Variable de entorno | Valor predeterminado | Uso |
+7. Iniciar la aplicación.
+
+   ```bat
+   python app.py
+   ```
+
+8. Abrir el sistema en el navegador. [TecnoControl Escolar en este equipo](http://127.0.0.1:5000)
+
+**En las siguientes sesiones**, iniciar MySQL en XAMPP, abrir la carpeta del proyecto en CMD y activar el entorno si la terminal se acaba de abrir. Con `(venv)` activo, ejecutar **`python app.py`**. Para cerrar, detener Flask con **Ctrl+C** y luego pulsar **Stop** en MySQL.
+
+**Si ya existe una instalación de la versión anterior**, realizar una copia de respaldo antes de actualizarla. Los pasos 2 y 3 conservan las cuentas, contraseñas, fichas, reservas y acuerdos existentes. Las nuevas cuentas de ejemplo se crean únicamente en una base sin usuarios. La semilla se puede volver a importar. Una instalación de XAMPP que ya utiliza credenciales propias admite las variables de conexión existentes en `config.py`.
+
+## Cuentas de la instalación nueva
+
+| Perfil | Usuario | Contraseña de demostración |
 | --- | --- | --- |
-| `DB_HOST` | `127.0.0.1` | Dirección del servidor MariaDB |
-| `DB_PORT` | `3306` | Puerto de MariaDB |
-| `DB_USER` | `root` | Usuario de conexión |
-| `DB_PASSWORD` | Vacío | Contraseña de conexión |
-| `DB_NAME` | `tecnocontrol_escolar` | Base de datos de la aplicación |
+| Administrador escolar | `adminescolar0001` | `Admin2026*` |
+| Coordinador de Tutorías | `coordinadortutoria0001` | `Coord2026*` |
+| Tutor | `maestro0001` a `maestro0009` | `Tutor2026*` |
+| Lucía Cruz Pineda · Sistemas · 1.er semestre | `26090101` | `Alumno2026*` |
+| Mateo Vega Ríos · Sistemas · 3.er semestre | `25090102` | `Alumno2026*` |
+| Elisa Lara Solís · Electromecánica · 3.er semestre | `25090103` | `Alumno2026*` |
 
-Si la instalación de MariaDB tiene otros datos de acceso, define las variables correspondientes en la terminal antes de iniciar Flask. Por ejemplo, si el usuario de MariaDB tiene contraseña:
+Los tres estudiantes tienen una identidad ficticia. El periodo escolar del ejemplo es agosto–diciembre de 2026. El año de ingreso y el ciclo determinan el semestre. Las dos semanas de franjas se calculan al importar la semilla por primera vez. Para una demostración posterior, utilizar **Franjas** en Coordinación para publicar las fechas vigentes.
 
-```bat
-set DB_PASSWORD=tu_contrasena_local
-```
+### Docentes de la demostración
 
-También se puede definir `SECRET_KEY` con un valor propio y estable para conservar la firma de las sesiones entre reinicios. Si no se define, la aplicación genera una clave al iniciarse. `DB_SOCKET` es opcional para instalaciones que utilicen un socket local.
+| Usuario | Docente | Grado del escenario | Asignatura de referencia |
+| --- | --- | --- | --- |
+| `maestro0001` | Ángel Sandoval Jacobo | Ing. | ACF-0901 · Cálculo diferencial |
+| `maestro0002` | Ma. Guadalupe Rojas Vilchis | Ing. | AED-1285 · Fundamentos de programación |
+| `maestro0003` | Jesús Manzo Espín | Mtro. | ACF-0902 · Cálculo integral |
+| `maestro0004` | Felipe Castañeda Martínez | Mtro. | AED-1286 · Programación orientada a objetos |
+| `maestro0005` | Ana Delia Moreno Altamirano | Dr. | ACF-0904 · Cálculo vectorial |
+| `maestro0006` | José Antonio Velázquez Santana | Dr. | AED-1026 · Estructura de datos |
+| `maestro0007` | Mariana Ríos Beltrán | Dr. | EMC-1011 · Electricidad y magnetismo |
+| `maestro0008` | Gabriel Luna Serrano | Dr. | EMJ-1021 · Mecánica de materiales |
+| `maestro0009` | Elena Ortega Vidal | Dr. | EMC-1018 · Máquinas y equipos térmicos I |
 
-### 5. Iniciar la aplicación
+Los tres departamentos del escenario son Ciencias Básicas, Sistemas y Computación y Metalmecánica. Las seis primeras asignaciones corresponden a los nombres proporcionados para el proyecto. Los otros tres docentes, los grados, las autorizaciones, los horarios y las citas son datos del escenario. Las claves y los semestres de las asignaturas corresponden a las retículas entregadas.
 
-Con el entorno virtual activo y MariaDB en ejecución:
+## Recorrido de demostración
 
-```bat
-python app.py
-```
+1. Ingresar como **Lucía** y abrir **Reservar asesoría**. Seleccionar **Cálculo diferencial** y **Semana siguiente**. El lunes a las 15:00 aparecen dos tutores. Elegir uno a la derecha y revisar la selección inferior. Pulsar la misma franja por segunda vez para quitarla.
+2. Reservar el horario, abrir la cita en el calendario y pulsar **Confirmar**. El lugar ya está apartado. Para probar la cancelación, pulsar **Cancelar** antes del inicio. El contador libera un lugar.
+3. Consultar el jueves de esa semana a las 10:00 para probar el cruce con clase. La reserva requiere aceptar expresamente el cruce. El martes a las 17:00 hay otra franja de Cálculo diferencial con un único lugar, ocupado por una reserva de demostración.
+4. Ingresar como **Mateo**, seleccionar **Cálculo vectorial** y elegir **Cálculo integral** como materia previa. En **Mi historial** se puede consultar el acuerdo de Estructura de datos y su seguimiento con lugar apartado.
+5. Ingresar como **maestro0006**. En **Mis franjas**, consultar el miércoles de la semana siguiente y pulsar **Ver estudiantes** en la franja de las 16:00. Abrir **Registrar atención**. **Asistió** habilita la decisión. **Cerrado** admite anotaciones opcionales. **Agendar seguimiento** muestra las franjas posteriores del mismo tutor y materia con cupo y horario compatibles. **No asistió** permite guardar únicamente la inasistencia.
+6. En **Administrar disponibilidad**, seleccionar un día o un rango. Revisar las franjas y los alumnos afectados antes de **Confirmar suspensión**. Los alumnos pueden consultar la cancelación en sus calendarios.
+7. Ingresar como **Coordinación** para habilitar tutores, autorizar materias, publicar bloques o ajustar el cupo. El reporte abre el detalle de cada acuerdo en una ventana de consulta. En el reporte del docente, **En seguimiento** abre la atención guardada y permite regresar al mismo periodo consultado.
 
-Abre [http://127.0.0.1:5000](http://127.0.0.1:5000) en el navegador. Para detener Flask, presiona `Ctrl+C` en su terminal.
+## Trazabilidad de los módulos
 
-En aperturas posteriores basta con iniciar MariaDB, abrir CMD en la carpeta del proyecto, activar el entorno y ejecutar la aplicación:
-
-```bat
-venv\Scripts\activate.bat
-python app.py
-```
-
-## Cuentas de demostración
-
-Estas cuentas se crean al ejecutar `semilladml.sql` en una instalación nueva:
-
-| Perfil o persona | Usuario | Contraseña inicial de demostración |
+| Información | Registro de origen | Dónde se utiliza |
 | --- | --- | --- |
-| Administrador Escolar | `adminescolar0001` | `Admin2026*` |
-| Coordinación de Tutorías | `coordinadortutoria0001` | `Coord2026*` |
-| Tutor Daniel Vargas León | `maestro0001` | `Tutor2026*` |
-| Tutor Julián Vega Soto | `maestro0002` | `Tutor2026*` |
-| Tutora Sara León Ruiz | `maestro0003` | `Tutor2026*` |
-| David Santos Cruz, no habilitado como tutor | `maestro0004` | `Docente2026*` |
-| Luis Ivan Salgado Rivera | `22090748` | `2209074812345` |
-| Renata Cruz Luna | `26090022` | `2609002212345` |
-| Miguel Vera Díaz | `26090023` | `2609002312345` |
+| Semestre y materias inscritas | `periodos_escolares`, `estudiantes`, `carrera_materia.semestre` y `horario_estudiante` | Ficha de estudiante, calendario y selector de materia |
+| Carga del docente | Ficha de docente, `horario_docente`, departamento, grado y `materias.posicion` | Perfil de asesorías, materias autorizables y celdas de clase protegidas |
+| Autorización para asesorar | Coordinación guarda `docentes.habilitado_tutor` y `tutor_materias.autorizada` | Publicación y consulta de tutores elegibles por carrera y materia |
+| Horario y cupo | `franjas_asesoria`, `bloques_horarios` y `v_franjas_cupo` | Los calendarios de Coordinación, tutor y alumno muestran la misma franja |
+| Apartado, confirmación y excepción de clase | `reservas_asesoria` vincula alumno, franja y materia inscrita. Registra confirmación y aceptación del cruce | Contador de lugares, calendario e historial |
+| Suspensión de un día o rango | `bloqueos_asesoria` y motivo de cancelación en las franjas y reservas afectadas | Disponibilidad del docente y cancelación visible al alumno |
+| Atención y seguimiento | La cita conserva el resultado y las anotaciones opcionales de cierre. `acuerdos.id_reserva` enlaza con la cita atendida. `reservas_asesoria.id_reserva_origen` enlaza la siguiente cita | Consulta del acuerdo, historial por recorrido y reportes por periodo |
 
-David tiene estado laboral Investigación y su cuenta está inactiva. Los demás usuarios de la semilla están activos. Cada usuario accede al menú de su perfil. El estudiante consulta y reserva sus asesorías; el tutor habilitado consulta sus franjas y estudiantes, registra la atención y los acuerdos, agenda seguimientos y consulta su reporte.
+Al guardar Investigación o Sabático en la ficha de docente, se vacía el horario vigente y se cancelan las asesorías programadas de ese tutor. Al reactivarlo se puede asignar un horario nuevo.
 
-Si una contraseña ya se cambió en la base local, debe utilizarse su valor actual. Las contraseñas se almacenan como hashes scrypt. Al registrar personas nuevas, Administración captura una contraseña definitiva y su confirmación.
+El catálogo contiene 46 asignaturas con clave del plan ISIC-2010-224 y 45 del plan IEME-2010-210. Las materias compartidas conservan una sola clave en `materias` y su semestre particular en `carrera_materia`. Las cadenas del escenario son Cálculo diferencial → integral → vectorial, Fundamentos de programación → Programación orientada a objetos → Estructura de datos y Termodinámica → Transferencia de calor → Máquinas y equipos térmicos I. Las demás materias se tratan como independientes.
 
-## Funciones disponibles por perfil
+## Evolución del proyecto
 
-- **Acceso:** inicio y cierre de sesión, navegación según el perfil y restablecimiento de contraseña mediante el usuario o número de control y el correo institucional registrado, en la misma pantalla.
-- **Administración Escolar:** registro, consulta y edición de estudiantes y docentes, sus datos de acceso y sus horarios base.
-- **Coordinación de Tutorías:** consulta de docentes, habilitación de tutores activos, autorización de materias de su departamento, publicación de franjas, consulta del historial por número de control y reporte general por fechas, carrera y tutor.
-- **Estudiante:** selección de materias de su carga vigente, consulta de franjas compatibles, visualización de lugares disponibles y franjas sin cupo, confirmación de una reserva inicial y consulta de su propio historial de citas, acuerdos y seguimientos registrados.
-- **Tutor:** consulta de sus franjas por fecha y de los estudiantes con reserva, registro individual de la atención y el acuerdo, cierre del acuerdo o programación de una cita de seguimiento compatible, y reporte de sus propias asesorías por rango de fechas.
-
-El código del módulo 3 contempla cupo fijo de 10 lugares, bloques de una hora, materias autorizadas para el tutor y la carrera, fechas de lunes a viernes y horarios sin cruces con clases ni con otras franjas del tutor. Las escrituras relacionadas se agrupan en transacciones con confirmación o reversión de cambios.
-
-El módulo 4 consulta la oferta para estudiantes inscritos, según su carrera y las materias de su carga vigente. Excluye horarios incompatibles con sus clases o con otras reservas y permite reservar con tutores habilitados y activos. Las franjas sin lugares se muestran como **Sin cupo**, con la acción de reserva deshabilitada.
-
-Al confirmar, el sistema vuelve a validar la disponibilidad, el cupo y la elegibilidad del estudiante. Impide duplicar una reserva del mismo estudiante en la misma franja. Si la operación es válida, guarda la cita con estado **Programada** y muestra **Mi historial**; si la disponibilidad cambió, presenta un aviso y devuelve a la oferta. La identidad del estudiante se obtiene de su sesión autenticada.
-
-El módulo 5 permite guardar un acuerdo individual al marcar la atención como realizada. El tutor elige **Cerrar acuerdo** o **Agendar seguimiento**. El seguimiento debe corresponder al mismo estudiante y tutor, en una franja posterior compatible con la carga vigente, los horarios y el cupo.
-
-La atención pasa a **Realizada** y el acuerdo queda **Cerrado** o **En seguimiento**. Al agendar un seguimiento se crea una reserva **Programada**, vinculada a la cita de origen. Estas operaciones se guardan en una sola transacción; si una validación falla, se revierten los cambios. Se impide guardar un segundo acuerdo o seguimiento para la misma cita.
-
-El tutor accede únicamente a las reservas y reportes de sus propias franjas. Los historiales muestran los acuerdos y las citas vinculadas, incluyendo el estado del seguimiento para distinguir una próxima asesoría programada de una cita de seguimiento ya atendida.
-
-## Base de datos y datos de demostración
-
-`database.sql` define 16 tablas InnoDB, dos vistas calculadas y cinco triggers, con codificación `utf8mb4` y cotejamiento `utf8mb4_unicode_ci`.
-
-La semilla contiene nueve cuentas, cuatro docentes, tres estudiantes, 37 registros de horario de estudiantes, dos de horario docente, tres franjas y dos reservas iniciales. No contiene acuerdos ni reservas para el estudiante 22090748.
-
-Las franjas de demostración están fechadas el 20, 24 y 25 de noviembre de 2026. La disponibilidad se calcula con la fecha y hora locales del equipo; para una demostración posterior se pueden publicar otras franjas futuras válidas desde Coordinación.
-
-Los historiales y reportes consultan los registros existentes en la base de datos. La información ilustrativa de los wireframes no se carga automáticamente como datos.
-
-## Archivos principales
-
-| Ruta | Función |
-| --- | --- |
-| `app.py` | Configuración de Flask, registro de módulos, navegación y pestañas activas por perfil, protección de formularios y manejo de errores |
-| `auth.py` | Inicio y cierre de sesión, control de perfiles y restablecimiento de contraseña |
-| `config.py` | Parámetros de conexión y configuración de sesiones |
-| `db.py` | Conexiones, consultas parametrizadas y transacciones |
-| `reglas.py` | Validaciones compartidas, disponibilidad, elegibilidad y cupo de reservas, y consultas de historial con el estado del seguimiento |
-| `modulos/admin.py` | Gestión de estudiantes y docentes |
-| `modulos/coordinacion.py` | Funciones de Coordinación de Tutorías |
-| `modulos/estudiante.py` | Oferta de asesorías, confirmación de reservas e historial del estudiante |
-| `modulos/tutor.py` | Consulta de franjas y estudiantes, atención, acuerdos, seguimiento y reporte del tutor |
-| `templates/` | Plantillas HTML de las pantallas |
-| `templates/estudiante/` | Oferta de franjas, confirmación de reserva e historial del estudiante |
-| `templates/tutor/` | Franjas, acuerdo individual, seguimiento y reporte del tutor |
-| `templates/_detalle_acuerdos.html` | Detalle compartido del acuerdo y de la cita de seguimiento vinculada |
-| `static/` | Estilos institucionales, JavaScript y Bootstrap local |
-| `static/js/seguimiento.js` | Habilitación y validación del selector de franja al elegir Agendar seguimiento |
-| `database.sql` | Estructura reproducible de la base de datos |
-| `semilladml.sql` | Catálogos y datos de demostración |
-| `requirements.txt` | Dependencias de Python |
-
+Se conservaron los puntos de entrada `app.py`, `auth.py`, `db.py` y los cuatro módulos existentes en `modulos/`. La mejora amplió los formularios y la base de datos de la versión anterior. Los calendarios reutilizan una cuadrícula común en `static/js/calendario.js`. Las decisiones sobre cupos, horarios y elegibilidad se comprueban en el servidor al guardar.

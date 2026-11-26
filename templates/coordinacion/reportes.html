@@ -11,6 +11,8 @@
   <div class="col-md-2"><button class="btn btn-primary">Generar reporte</button></div>
 </form>
 <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Estudiante</th><th>Fecha</th><th>Horario</th><th>Materia</th><th>Tutor</th><th>Cita</th><th>Acuerdo</th></tr></thead>
-<tbody>{% for r in filas %}<tr><td>{{ r.estudiante }}</td><td>{{ r.fecha|fecha }}</td><td>{{ r.horario|bloque }}</td><td>{{ r.materia }}</td><td>{{ r.docente }}</td><td>{{ r.estado_cita }}</td><td>{{ r.estado_acuerdo or '—' }}</td></tr>
+<tbody>{% for r in filas %}<tr><td>{{ r.estudiante }}</td><td>{{ r.fecha|fecha }}</td><td>{{ r.horario|bloque }}</td><td>{{ r.materia }}</td><td>{{ r.docente }}</td><td>{{ r.estado_cita|replace('No asistio','No asistió') }}</td><td>{% if r.estado_acuerdo or r.id_reserva_origen %}<button type="button" class="btn btn-link p-0" data-bs-toggle="modal" data-bs-target="#acuerdo-{{ r.id_reserva }}">{{ r.estado_acuerdo or 'Ver seguimiento' }}</button>{% else %}{{ 'Pendiente de atención' if r.estado_cita=='Programada' else 'Sin acuerdo' }}{% endif %}</td></tr>
 {% else %}<tr><td colspan="7">No hay asesorías para los filtros seleccionados.</td></tr>{% endfor %}</tbody></table></div>
+{% for r in filas if r.estado_acuerdo or r.id_reserva_origen %}<div class="modal fade" id="acuerdo-{{ r.id_reserva }}" tabindex="-1" aria-labelledby="titulo-{{ r.id_reserva }}"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h2 id="titulo-{{ r.id_reserva }}">Acuerdo y seguimiento</h2></div><div class="modal-body"><p>{{ r.estudiante }} · {{ r.materia }} · {{ r.docente }}</p>
+{% set grupos=detalles[r.id_reserva] %}{% include '_detalle_acuerdos.html' %}</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div></div></div></div>{% endfor %}
 {% endblock %}

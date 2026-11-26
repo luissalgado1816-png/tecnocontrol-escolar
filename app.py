@@ -31,6 +31,7 @@ MENU = {
     ],
     "consulta_seguimiento": [
         ("Mis franjas", "tutor.franjas"),
+        ("Disponibilidad", "tutor.disponibilidad"),
         ("Reportes", "tutor.reportes"),
     ],
 }
@@ -127,5 +128,8 @@ def create_app(config=None):
 app = create_app()
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000)
+    #app.run(host="192.168.1.67", port=5000, debug=False)
+    #app.run(host="127.0.0.1", port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=False)
+
 
