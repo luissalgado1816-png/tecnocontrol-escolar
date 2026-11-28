@@ -7,7 +7,7 @@ Aplicación de gestión de asesorías del Instituto Tecnológico de Zacatepec. L
 Utilizar Python 3.14, XAMPP con MariaDB 10.4.32 y una terminal **CMD**. Descargar o clonar el proyecto y abrir en VS Code la carpeta que contiene `app.py`. Los comandos siguientes se ejecutan desde esa carpeta. Las rutas de XAMPP corresponden a su instalación predeterminada.
 
 1. Iniciar **MySQL** desde el panel de XAMPP. La aplicación utiliza `127.0.0.1`, puerto `3306`, con la cuenta local predeterminada de XAMPP.
-2. Crear o actualizar las tablas, vistas y reglas de la base de datos.
+2. Crear el esquema inicial con sus tablas, vistas y disparadores.
 
    ```bat
    "C:\xampp\mysql\bin\mysql.exe" -u root < database.sql
@@ -47,7 +47,39 @@ Utilizar Python 3.14, XAMPP con MariaDB 10.4.32 y una terminal **CMD**. Descarga
 
 **En las siguientes sesiones**, iniciar MySQL en XAMPP, abrir la carpeta del proyecto en CMD y activar el entorno si la terminal se acaba de abrir. Con `(venv)` activo, ejecutar **`python app.py`**. Para cerrar, detener Flask con **Ctrl+C** y luego pulsar **Stop** en MySQL.
 
-**Si ya existe una instalación de la versión anterior**, realizar una copia de respaldo antes de actualizarla. Los pasos 2 y 3 conservan las cuentas, contraseñas, fichas, reservas y acuerdos existentes. Las nuevas cuentas de ejemplo se crean únicamente en una base sin usuarios. La semilla se puede volver a importar. Una instalación de XAMPP que ya utiliza credenciales propias admite las variables de conexión existentes en `config.py`.
+## Actualización de una instalación existente
+
+La migración incorpora la cadena de asesorías a una base que ya utiliza el esquema anterior del sistema.
+
+1. Respaldar la base de datos y detener Flask con **Ctrl+C**. Mantener **MySQL** activo en XAMPP.
+2. Actualizar los archivos del proyecto y ejecutar la migración desde la carpeta del repositorio en CMD.
+
+   ```bat
+   "C:\xampp\mysql\bin\mysql.exe" -h 127.0.0.1 -P 3306 -u root --default-character-set=utf8mb4 --database=tecnocontrol_escolar < actualizar_cadena_asesorias.sql
+   ```
+
+3. Iniciar Flask nuevamente desde el entorno virtual.
+
+   ```bat
+   venv\Scripts\python.exe app.py
+   ```
+
+La migración permite guardar la materia asesorada en cada cita. Las citas previas se consultan con la materia de su franja. Si la instalación utiliza otra base o credenciales propias, usar los valores de conexión configurados para Flask en `config.py`.
+
+Para revertir la actualización, aplicar `revertir_cadena_asesorias.sql` con la misma conexión y recuperar el código anterior antes de iniciar Flask. La reversión conserva los registros de citas. La versión anterior muestra la materia de la franja al consultarlos.
+
+## Uso de los archivos SQL
+
+Los archivos SQL se ejecutan por separado desde un cliente de MariaDB, según la operación. Flask se conecta a la base cargada y envía consultas o cambios. MariaDB ejecuta los disparadores instalados al insertar o actualizar los registros correspondientes.
+
+| Archivo | Cuándo ejecutarlo |
+| --- | --- |
+| `database.sql` | En una instalación nueva. Crea la base, las tablas, las vistas y los disparadores, incluidas las reglas de la cadena y de restablecimiento de citas. |
+| `semilladml.sql` | Después de `database.sql` en la instalación inicial. Carga los catálogos y prepara los datos de demostración si la base está vacía de usuarios. |
+| `actualizar_cadena_asesorias.sql` | Al añadir el soporte de la cadena a una instalación que ya cuenta con el esquema anterior. Incorpora la materia asesorada y actualiza las reglas que la validan. |
+| `restablecer_disponibilidad.sql` | Como mantenimiento, para volver a instalar el disparador que permite restaurar citas suspendidas. Requiere el esquema actualizado. El `database.sql` actual y la migración de cadena ya incluyen ese disparador. |
+| `revertir_cadena_asesorias.sql` | Al volver a la versión anterior a la cadena. Aplicarlo como parte de la reversión y recuperar también el código anterior. |
+| `Consultas.sql` | Si está en la copia de trabajo, abrirlo en el cliente SQL y ejecutar las sentencias que correspondan a la comprobación que se quiera realizar. |
 
 ## Cuentas de la instalación nueva
 
@@ -80,13 +112,25 @@ Los tres departamentos del escenario son Ciencias Básicas, Sistemas y Computaci
 
 ## Recorrido de demostración
 
-1. Ingresar como **Lucía** y abrir **Reservar asesoría**. Seleccionar **Cálculo diferencial** y **Semana siguiente**. El lunes a las 15:00 aparecen dos tutores. Elegir uno a la derecha y revisar la selección inferior. Pulsar la misma franja por segunda vez para quitarla.
-2. Reservar el horario, abrir la cita en el calendario y pulsar **Confirmar**. El lugar ya está apartado. Para probar la cancelación, pulsar **Cancelar** antes del inicio. El contador libera un lugar.
+1. Ingresar como **Lucía** y abrir **Reservar asesoría**. Seleccionar **Cálculo diferencial** y **Semana siguiente**. El lunes a las 15:00 aparecen dos tutores. Pulsar ese horario en el calendario para abrir **Franjas de asesoría**, elegir un tutor y pulsar **Reservar**.
+2. Pulsar **Confirmar reserva** para apartar el lugar. Abrir la cita en el calendario y pulsar **Confirmar** para confirmar la asistencia. Para probar la cancelación, pulsar **Cancelar** antes del inicio. El contador libera un lugar.
 3. Consultar el jueves de esa semana a las 10:00 para probar el cruce con clase. La reserva requiere aceptar expresamente el cruce. El martes a las 17:00 hay otra franja de Cálculo diferencial con un único lugar, ocupado por una reserva de demostración.
-4. Ingresar como **Mateo**, seleccionar **Cálculo vectorial** y elegir **Cálculo integral** como materia previa. En **Mi historial** se puede consultar el acuerdo de Estructura de datos y su seguimiento con lugar apartado.
+4. Ingresar como **Mateo**, seleccionar **Cálculo vectorial** como materia inscrita, elegir **Cálculo integral** como materia para asesoría y consultar **Semana siguiente**. El martes, Jesús Manzo Espín ofrece una franja de Integral a las 16:00 y Ana Delia Moreno Altamirano ofrece una franja de Vectorial a las 15:00 que cubre Integral por su grado y la cadena. Al reservar con Ana Delia, la cita aparece como **Cálculo integral** en **Mi historial** y ocupa un lugar de su franja de Vectorial. En ese historial también se puede consultar el acuerdo de Estructura de datos y su seguimiento con lugar apartado.
 5. Ingresar como **maestro0006**. En **Mis franjas**, consultar el miércoles de la semana siguiente y pulsar **Ver estudiantes** en la franja de las 16:00. Abrir **Registrar atención**. **Asistió** habilita la decisión. **Cerrado** admite anotaciones opcionales. **Agendar seguimiento** muestra las franjas posteriores del mismo tutor y materia con cupo y horario compatibles. **No asistió** permite guardar únicamente la inasistencia.
 6. En **Administrar disponibilidad**, seleccionar un día o un rango. Revisar las franjas y los alumnos afectados antes de **Confirmar suspensión**. Los alumnos pueden consultar la cancelación en sus calendarios.
 7. Ingresar como **Coordinación** para habilitar tutores, autorizar materias, publicar bloques o ajustar el cupo. El reporte abre el detalle de cada acuerdo en una ventana de consulta. En el reporte del docente, **En seguimiento** abre la atención guardada y permite regresar al mismo periodo consultado.
+
+## Arquitectura y conexión a la base de datos
+
+| Capa | Tecnología y función | Ubicación en el proyecto |
+| --- | --- | --- |
+| Presentación | Jinja genera HTML. Bootstrap y JavaScript controlan la presentación y la interacción de los calendarios y las ventanas. | `templates/` y `static/` |
+| Aplicación | Flask recibe las peticiones HTTP. Las rutas y las reglas en Python verifican el perfil, la elegibilidad, el horario y el cupo. | `app.py`, `auth.py`, `modulos/` y `reglas.py` |
+| Datos | PyMySQL conecta la aplicación con MariaDB, donde se guardan estudiantes, franjas, citas y acuerdos. | `db.py`, `config.py` y `database.sql` |
+
+Al confirmar una reserva, el navegador envía la solicitud a `modulos/estudiante.py`. La ruta aplica las validaciones de `reglas.py` y guarda la reserva en MariaDB mediante `db.py`. Flask redirige a la pantalla de reserva, que muestra la cita y el cupo actualizado.
+
+La función `get_db()` establece la conexión en la línea 28 de `db.py` mediante `pymysql.connect(**params)`. Los parámetros de conexión se configuran en `config.py`.
 
 ## Trazabilidad de los módulos
 
@@ -94,9 +138,10 @@ Los tres departamentos del escenario son Ciencias Básicas, Sistemas y Computaci
 | --- | --- | --- |
 | Semestre y materias inscritas | `periodos_escolares`, `estudiantes`, `carrera_materia.semestre` y `horario_estudiante` | Ficha de estudiante, calendario y selector de materia |
 | Carga del docente | Ficha de docente, `horario_docente`, departamento, grado y `materias.posicion` | Perfil de asesorías, materias autorizables y celdas de clase protegidas |
-| Autorización para asesorar | Coordinación guarda `docentes.habilitado_tutor` y `tutor_materias.autorizada` | Publicación y consulta de tutores elegibles por carrera y materia |
+| Autorización y alcance de la franja | Coordinación guarda `docentes.habilitado_tutor` y autoriza materias de la carga vigente en `tutor_materias`. La vista `v_materias_asesorables_franja` calcula qué materias cubre cada franja a partir de su carrera y materia publicada, la cadena y el grado del tutor. | Perfil del tutor, publicación y búsqueda de franjas |
 | Horario y cupo | `franjas_asesoria`, `bloques_horarios` y `v_franjas_cupo` | Los calendarios de Coordinación, tutor y alumno muestran la misma franja |
-| Apartado, confirmación y excepción de clase | `reservas_asesoria` vincula alumno, franja y materia inscrita. Registra confirmación y aceptación del cruce | Contador de lugares, calendario e historial |
+| Materias vinculadas a la cita | `reservas_asesoria.id_materia_inscrita` identifica la materia que cursa el alumno. `reservas_asesoria.id_materia_asesorada` registra la materia que eligió para la cita. `franjas_asesoria.id_materia` identifica la materia con la que se publicó la franja. | El historial, el seguimiento y el bloqueo por materia usan la materia asesorada. El cupo de la franja se comparte entre las materias que cubre. |
+| Apartado, confirmación y excepción de clase | `reservas_asesoria` vincula al alumno con la franja y registra la confirmación y la aceptación del cruce. | Contador de lugares, calendario e historial |
 | Suspensión de un día o rango | `bloqueos_asesoria` y motivo de cancelación en las franjas y reservas afectadas | Disponibilidad del docente y cancelación visible al alumno |
 | Atención y seguimiento | La cita conserva el resultado y las anotaciones opcionales de cierre. `acuerdos.id_reserva` enlaza con la cita atendida. `reservas_asesoria.id_reserva_origen` enlaza la siguiente cita | Consulta del acuerdo, historial por recorrido y reportes por periodo |
 
