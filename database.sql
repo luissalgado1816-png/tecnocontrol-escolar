@@ -250,6 +250,7 @@ ALTER TABLE franjas_asesoria ADD UNIQUE INDEX IF NOT EXISTS uq_franja_publicada 
 ALTER TABLE franjas_asesoria DROP INDEX IF EXISTS uq_doc_fecha_blq;
 
 ALTER TABLE reservas_asesoria ADD COLUMN IF NOT EXISTS id_materia_inscrita INT NULL;
+ALTER TABLE reservas_asesoria ADD COLUMN IF NOT EXISTS id_materia_asesorada INT NULL;
 ALTER TABLE reservas_asesoria ADD COLUMN IF NOT EXISTS cruce_aceptado TINYINT(1) NOT NULL DEFAULT 0;
 ALTER TABLE reservas_asesoria ADD COLUMN IF NOT EXISTS confirmada TINYINT(1) NOT NULL DEFAULT 0;
 ALTER TABLE reservas_asesoria ADD COLUMN IF NOT EXISTS resultado_atencion ENUM('Cerrado','En seguimiento') NULL;
@@ -266,6 +267,7 @@ ALTER TABLE reservas_asesoria DROP INDEX IF EXISTS uq_franja_est;
 ALTER TABLE horario_docente ADD CONSTRAINT fk_hd_periodo FOREIGN KEY IF NOT EXISTS fk_hd_periodo (id_periodo) REFERENCES periodos_escolares(id_periodo);
 ALTER TABLE horario_estudiante ADD CONSTRAINT fk_he_periodo FOREIGN KEY IF NOT EXISTS fk_he_periodo (id_periodo) REFERENCES periodos_escolares(id_periodo);
 ALTER TABLE reservas_asesoria ADD CONSTRAINT fk_ra_inscrita FOREIGN KEY IF NOT EXISTS fk_ra_inscrita (id_materia_inscrita) REFERENCES materias(id_materia);
+ALTER TABLE reservas_asesoria ADD CONSTRAINT fk_ra_asesorada FOREIGN KEY IF NOT EXISTS fk_ra_asesorada (id_materia_asesorada) REFERENCES materias(id_materia);
 
 CREATE TABLE IF NOT EXISTS bloqueos_asesoria (
     id_bloqueo INT AUTO_INCREMENT PRIMARY KEY,
@@ -306,6 +308,21 @@ CREATE OR REPLACE VIEW v_materias_asesoria_estudiante AS
  JOIN materias m ON m.id_materia=cm.id_materia
  WHERE carga.semestre=v.semestre_actual AND (m.id_materia=actual.id_materia OR
        (m.id_departamento=actual.id_departamento AND m.posicion>0 AND m.posicion<actual.posicion));
+
+-- Alcance de la materia autorizada de cada franja, incluidas sus materias previas.
+CREATE OR REPLACE VIEW v_materias_asesorables_franja AS
+ SELECT f.id_franja, m.id_materia
+ FROM franjas_asesoria f
+ JOIN v_materias_elegibles_tutor e ON e.id_docente=f.id_docente
+     AND e.id_carrera=f.id_carrera AND e.id_materia=f.id_materia
+ JOIN docentes d ON d.id_docente=f.id_docente AND d.habilitado_tutor=1
+ JOIN tutor_materias tm ON tm.id_docente=f.id_docente
+     AND tm.id_materia=f.id_materia AND tm.autorizada=1
+ JOIN materias base ON base.id_materia=f.id_materia
+ JOIN carrera_materia cm ON cm.id_carrera=f.id_carrera
+ JOIN materias m ON m.id_materia=cm.id_materia
+ WHERE m.id_materia=base.id_materia
+    OR (m.id_departamento=base.id_departamento AND m.posicion>0 AND m.posicion<base.posicion);
 
 -- Reservas que no están canceladas, lugares libres y estado calculado
 CREATE OR REPLACE VIEW v_franjas_cupo AS
@@ -385,6 +402,7 @@ BEGIN
     DECLARE v_hora TIME;
     DECLARE v_car_franja INT;
     DECLARE v_materia INT;
+    DECLARE v_asesorada INT;
     DECLARE v_docente INT;
     DECLARE v_hab TINYINT;
     DECLARE v_estado_doc VARCHAR(20);
@@ -425,24 +443,42 @@ BEGIN
     END IF;
 
     IF NEW.id_materia_inscrita IS NULL THEN SET NEW.id_materia_inscrita=v_materia; END IF;
-    SELECT COUNT(*) INTO v_choque FROM tutor_materias
-     WHERE id_docente=v_docente AND id_materia=v_materia AND autorizada=1;
+    SET v_asesorada=COALESCE(NEW.id_materia_asesorada,v_materia);
+    SELECT COUNT(*) INTO v_choque
+      FROM v_horario_docente_actual h
+      JOIN docentes d ON d.id_docente=h.id_docente
+      JOIN materias carga ON carga.id_materia=h.id_materia
+      JOIN materias base ON base.id_materia=v_materia AND base.id_departamento=d.id_departamento
+      JOIN tutor_materias tm ON tm.id_docente=h.id_docente
+          AND tm.id_materia=base.id_materia AND tm.autorizada=1
+      JOIN carrera_materia cm ON cm.id_carrera=h.id_carrera AND cm.id_materia=v_asesorada
+      JOIN materias asesorada ON asesorada.id_materia=cm.id_materia
+     WHERE h.id_docente=v_docente AND h.id_carrera=v_car_franja
+       AND base.posicion <= CASE WHEN d.grado_academico IN ('Dr.','Dra.') THEN 3
+                                 WHEN d.grado_academico IN ('Mtro.','Mtra.') THEN 2 ELSE 1 END
+       AND (carga.id_materia=base.id_materia OR
+           (carga.id_departamento=base.id_departamento AND base.posicion>0 AND base.posicion<carga.posicion))
+       AND (asesorada.id_materia=base.id_materia OR
+           (asesorada.id_departamento=base.id_departamento AND asesorada.posicion>0 AND asesorada.posicion<base.posicion));
     IF v_choque=0
        OR EXISTS (SELECT 1 FROM bloqueos_asesoria WHERE id_docente=v_docente AND v_fecha BETWEEN desde AND hasta) THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='El tutor suspendió la asesoría o dejó de tener la materia autorizada';
     END IF;
     IF EXISTS (SELECT 1 FROM reservas_asesoria r JOIN franjas_asesoria f USING(id_franja)
-                WHERE r.id_estudiante=NEW.id_estudiante AND f.id_materia=v_materia AND r.estado_cita='Programada') THEN
+                WHERE r.id_estudiante=NEW.id_estudiante AND r.estado_cita='Programada'
+                  AND COALESCE(r.id_materia_asesorada,f.id_materia)=v_asesorada) THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Ya tienes una asesoría abierta de esta materia';
     END IF;
     SELECT COUNT(*) INTO v_choque FROM v_horario_estudiante_actual h
       JOIN v_estudiantes_semestre est ON est.id_estudiante=h.id_estudiante
       JOIN carrera_materia cm ON cm.id_carrera=v_car_est AND cm.id_materia=h.id_materia AND cm.semestre=est.semestre_actual
+      JOIN carrera_materia destino ON destino.id_carrera=v_car_est AND destino.id_materia=v_asesorada
       JOIN materias inscrita ON inscrita.id_materia=h.id_materia
-      JOIN materias asesoria ON asesoria.id_materia=v_materia
-      WHERE h.id_estudiante=NEW.id_estudiante AND h.id_materia=NEW.id_materia_inscrita
-        AND (inscrita.id_materia=asesoria.id_materia OR (inscrita.id_departamento=asesoria.id_departamento AND asesoria.posicion>0 AND asesoria.posicion<inscrita.posicion));
-    IF v_choque = 0 THEN
+      JOIN materias asesoria ON asesoria.id_materia=destino.id_materia
+     WHERE h.id_estudiante=NEW.id_estudiante AND h.id_materia=NEW.id_materia_inscrita
+       AND (inscrita.id_materia=asesoria.id_materia OR
+           (inscrita.id_departamento=asesoria.id_departamento AND asesoria.posicion>0 AND asesoria.posicion<inscrita.posicion));
+    IF v_choque=0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La materia no esta en la carga vigente del estudiante';
     END IF;
 
@@ -476,7 +512,8 @@ BEGIN
     IF NEW.tipo_cita = 'Seguimiento' THEN
         IF NOT EXISTS (SELECT 1 FROM reservas_asesoria origen JOIN franjas_asesoria f USING(id_franja)
              WHERE origen.id_reserva=NEW.id_reserva_origen AND origen.id_estudiante=NEW.id_estudiante
-               AND f.id_materia=v_materia AND origen.id_materia_inscrita=NEW.id_materia_inscrita) THEN
+               AND COALESCE(origen.id_materia_asesorada,f.id_materia)=v_asesorada
+               AND origen.id_materia_inscrita=NEW.id_materia_inscrita) THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='El seguimiento debe pertenecer a la misma atención y materia';
         END IF;
         SELECT r.estado_cita, f.id_docente, f.fecha, b.hora_inicio
@@ -549,12 +586,37 @@ BEGIN
 END$$
 CREATE OR REPLACE TRIGGER trg_reservas_bu BEFORE UPDATE ON reservas_asesoria FOR EACH ROW
 BEGIN
+    IF NOT (NEW.id_materia_asesorada <=> OLD.id_materia_asesorada) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='La materia asesorada de una cita registrada es de solo lectura';
+    END IF;
     IF OLD.estado_cita<>'Programada' AND (
-       NEW.estado_cita<>OLD.estado_cita OR NEW.confirmada<>OLD.confirmada
+       NEW.confirmada<>OLD.confirmada
        OR NEW.id_franja<>OLD.id_franja OR NEW.id_estudiante<>OLD.id_estudiante OR NEW.tipo_cita<>OLD.tipo_cita
        OR NOT (NEW.id_reserva_origen <=> OLD.id_reserva_origen) OR NOT (NEW.id_materia_inscrita <=> OLD.id_materia_inscrita)
        OR NOT (NEW.resultado_atencion <=> OLD.resultado_atencion) OR NOT (NEW.anotaciones <=> OLD.anotaciones)
-       OR NEW.cruce_aceptado<>OLD.cruce_aceptado OR NOT (NEW.motivo_cancelacion <=> OLD.motivo_cancelacion)) THEN
+       OR NEW.cruce_aceptado<>OLD.cruce_aceptado
+       OR (
+           (NEW.estado_cita<>OLD.estado_cita OR NOT (NEW.motivo_cancelacion <=> OLD.motivo_cancelacion))
+           AND NOT (
+               OLD.estado_cita='Cancelada' AND (OLD.motivo_cancelacion <=> 'Suspensión del docente')
+               AND (
+                   (NEW.estado_cita='Cancelada' AND (NEW.motivo_cancelacion <=> 'Suspensión del docente · no restablecida'))
+                   OR (
+                       NEW.estado_cita='Programada' AND NEW.motivo_cancelacion IS NULL
+                       AND EXISTS (
+                           SELECT 1 FROM franjas_asesoria f
+                           JOIN bloques_horarios b USING(id_bloque)
+                           WHERE f.id_franja=OLD.id_franja AND f.estado='Publicada'
+                             AND (f.fecha>CURRENT_DATE() OR (f.fecha=CURRENT_DATE() AND b.hora_inicio>CURRENT_TIME()))
+                             AND NOT EXISTS (
+                                 SELECT 1 FROM bloqueos_asesoria x
+                                 WHERE x.id_docente=f.id_docente AND f.fecha BETWEEN x.desde AND x.hasta
+                             )
+                       )
+                   )
+               )
+           )
+       )) THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='La atención guardada es de solo lectura';
     END IF;
 END$$

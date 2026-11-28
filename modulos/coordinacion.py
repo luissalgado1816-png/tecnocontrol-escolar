@@ -54,9 +54,9 @@ def perfil(id_docente):
 
     def elegibles():
         return db.query(
-            "SELECT DISTINCT m.id_materia,m.nombre,EXISTS(SELECT 1 FROM v_horario_docente_actual h "
-            "WHERE h.id_docente=e.id_docente AND h.id_materia=e.id_materia) AS cargada "
-            "FROM v_materias_elegibles_tutor e JOIN materias m USING(id_materia) "
+            "SELECT DISTINCT m.id_materia,m.nombre FROM v_materias_elegibles_tutor e "
+            "JOIN v_horario_docente_actual h USING(id_docente,id_carrera,id_materia) "
+            "JOIN materias m ON m.id_materia=e.id_materia "
             "WHERE e.id_docente=%s ORDER BY m.nombre",
             (id_docente,),
         )
@@ -85,9 +85,8 @@ def perfil(id_docente):
                     raise reglas.ReglaNegocio(
                         "Solo se puede habilitar como tutor a un docente activo."
                     )
-                if habilitar and (
-                    not nuevas or not nuevas <= {m["id_materia"] for m in elegibles()}
-                ):
+                permitidas = {m["id_materia"] for m in elegibles()}
+                if habilitar and (not nuevas or not nuevas <= permitidas):
                     raise reglas.ReglaNegocio(
                         "Selecciona materias permitidas por la carga y el grado del docente."
                     )
@@ -102,7 +101,10 @@ def perfil(id_docente):
                     reglas.cancelar_franjas(
                         id_docente, "Tutor deshabilitado por Coordinación"
                     )
-                for materia in anteriores - nuevas:
+                # Las materias previas autorizadas antes de este cambio pueden tener
+                # franjas vigentes. Guardar este formulario solo modifica la carga visible.
+                retiradas = (anteriores & permitidas) - nuevas if habilitar else anteriores
+                for materia in retiradas:
                     if habilitar:
                         reglas.cancelar_franjas(
                             id_docente,

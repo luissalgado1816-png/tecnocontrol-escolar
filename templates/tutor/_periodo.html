@@ -4,7 +4,7 @@
   {% for dia in dias_periodo %}
     {% for f in dia.bloques %}
       {% for r in f.alumnos %}
-      <tr><td>{{ dia.fecha|fecha_dia }}</td><td>{{ f.etiqueta|bloque }}</td><td>{{ f.materia }}</td><td>{{ r.matricula }}</td><td>{{ r.estudiante }}</td><td>{{ r.estado_cita }}{% if r.motivo_cancelacion == suspension_no_restablecida %} · no restablecida{% endif %}</td>
+      <tr><td>{{ dia.fecha|fecha_dia }}</td><td>{{ f.etiqueta|bloque }}</td><td>{{ r.materia }}</td><td>{{ r.matricula }}</td><td>{{ r.estudiante }}</td><td>{{ r.estado_cita }}{% if r.motivo_cancelacion == suspension_no_restablecida %} · no restablecida{% endif %}</td>
         {% if not preview and loop.first %}<td rowspan="{{ f.alumnos|length }}">{{ boton_restablecer(dia.fecha) if f.restablecible else '—' }}</td>{% endif %}
       </tr>
       {% else %}

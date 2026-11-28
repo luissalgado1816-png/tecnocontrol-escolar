@@ -133,7 +133,7 @@ def _opciones(cita):
             and (f["fecha"], f["id_bloque"]) not in ocupados
             and (reglas.dia(f["fecha"]), f["id_bloque"]) not in clases
         ):
-            opciones.append(f)
+            opciones.append(dict(f, materia=f["materia_asesorada"]))
     return opciones
 
 
@@ -185,7 +185,8 @@ def acuerdo(id_reserva):
                             reglas.entero(form["franja"]), bloquear=True
                         )
                         reglas.validar_reserva(
-                            est, nueva, actual["id_materia_inscrita"], origen=actual
+                            est, nueva, actual["id_materia_inscrita"],
+                            origen=actual, asesorada=actual["id_materia"],
                         )
                     resultado = "En seguimiento" if nueva else "Cerrado"
                     db.execute(
@@ -203,13 +204,14 @@ def acuerdo(id_reserva):
                             (id_reserva, form["descripcion"]),
                         )
                         db.insert(
-                            "INSERT INTO reservas_asesoria(id_franja,id_estudiante,tipo_cita,id_reserva_origen,id_materia_inscrita) "
-                            "VALUES(%s,%s,'Seguimiento',%s,%s)",
+                            "INSERT INTO reservas_asesoria(id_franja,id_estudiante,tipo_cita,id_reserva_origen,id_materia_inscrita,id_materia_asesorada) "
+                            "VALUES(%s,%s,'Seguimiento',%s,%s,%s)",
                             (
                                 nueva["id_franja"],
                                 est["id_estudiante"],
                                 id_reserva,
                                 actual["id_materia_inscrita"],
+                                actual["id_materia"],
                             ),
                         )
                 else:

@@ -72,6 +72,20 @@
         <p class="texto-acuerdo mb-0">
           {{ comentario or 'Sin comentarios registrados.' }}
         </p>
+        {% set relacionadas = grupo_por_cita[f.id_reserva]|rejectattr('id_reserva', 'equalto', f.id_reserva)|list %}
+        {% if relacionadas %}
+        <hr>
+        <h3 class="h6">Citas vinculadas</h3>
+        <ul class="mb-0 ps-3">
+          {% for cita in relacionadas %}
+          <li class="mb-2">
+            <strong>{{ cita.tipo_cita }}</strong> · {{ cita.fecha|fecha_dia }} · {{ cita.horario|bloque }}<br>
+            {{ cita.estado_cita|replace('No asistio', 'No asistió') }}{% if cita.estado_cita=='Programada' %} · {{ 'Confirmada' if cita.confirmada else 'Pendiente de confirmación' }}{% endif %}
+            {% if cita.motivo_cancelacion or cita.descripcion_acuerdo %}<p class="texto-acuerdo mb-0">{{ cita.motivo_cancelacion or cita.descripcion_acuerdo }}</p>{% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">

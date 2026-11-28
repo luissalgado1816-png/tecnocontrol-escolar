@@ -13,12 +13,11 @@
   <div class="form-check mb-4"><input class="form-check-input" id="habilitado" name="habilitado" type="checkbox" value="1" {{ 'checked' if habilitar }} {{ 'disabled' if docente.estado_laboral != 'Activo' }}>
     <label class="form-check-label" for="habilitado">Habilitar como tutor</label></div>
   <div class="row mb-3"><div class="col-md-6"><label class="form-label" for="departamento">Departamento</label><input id="departamento" class="form-control" value="{{ docente.departamento }}" readonly></div></div>
-  <p class="text-muted">Materias disponibles según la carga del docente, su grado y la cadena de la materia.</p>
   <fieldset id="materias-tutor" class="mb-3" {% if not habilitar %}disabled{% endif %}><legend class="h6">Materias que puede asesorar</legend>
-    <div class="row g-2">{% for m in materias %}<div class="col-md-6" {% if not m.cargada %}data-previa {% if not habilitar %}hidden{% endif %}{% endif %}><div class="form-check">
+    <div class="row g-2">{% for m in materias %}<div class="col-md-6"><div class="form-check">
       <input class="form-check-input" type="checkbox" name="materias" id="materia-{{ m.id_materia }}" value="{{ m.id_materia }}" {{ 'checked' if m.id_materia in seleccionadas }} {{ 'disabled' if docente.estado_laboral != 'Activo' }}>
-      <label class="form-check-label" for="materia-{{ m.id_materia }}">{{ m.nombre }}{{ " · materia previa" if not m.cargada }}</label>
-    </div></div>{% else %}<p>No hay materias registradas para este departamento.</p>{% endfor %}</div>
+      <label class="form-check-label" for="materia-{{ m.id_materia }}">{{ m.nombre }}</label>
+    </div></div>{% else %}<p>No hay materias de la carga vigente disponibles para autorizar.</p>{% endfor %}</div>
   </fieldset>
   <p class="text-muted">Al deshabilitar el perfil o retirar una materia se cancelan las citas programadas correspondientes.</p>
   <button class="btn btn-primary" {{ 'disabled' if docente.estado_laboral != 'Activo' }}>Guardar perfil</button>
@@ -26,4 +25,4 @@
 </form>
 {% endblock %}
 
-{% block scripts %}<script>document.getElementById('habilitado').addEventListener('change',function(){document.getElementById('materias-tutor').disabled=!this.checked;document.querySelectorAll('[data-previa]').forEach(el=>el.hidden=!this.checked);});</script>{% endblock %}
+{% block scripts %}<script>document.getElementById('habilitado').addEventListener('change',function(){document.getElementById('materias-tutor').disabled=!this.checked;});</script>{% endblock %}

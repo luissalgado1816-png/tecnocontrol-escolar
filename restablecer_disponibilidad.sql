@@ -4,6 +4,9 @@ SET NAMES utf8mb4;
 DELIMITER $$
 CREATE OR REPLACE TRIGGER trg_reservas_bu BEFORE UPDATE ON reservas_asesoria FOR EACH ROW
 BEGIN
+    IF NOT (NEW.id_materia_asesorada <=> OLD.id_materia_asesorada) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='La materia asesorada de una cita registrada es de solo lectura';
+    END IF;
     IF OLD.estado_cita<>'Programada' AND (
        NEW.confirmada<>OLD.confirmada
        OR NEW.id_franja<>OLD.id_franja OR NEW.id_estudiante<>OLD.id_estudiante OR NEW.tipo_cita<>OLD.tipo_cita

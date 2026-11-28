@@ -14,9 +14,9 @@
 </form>
 {% if estudiante.estado != 'Inscrito' %}<div class="alert alert-warning">Solo puede reservar un estudiante con estado Inscrito.</div>{% endif %}
 <div id="semanas" class="agenda-semanas"></div>
-<div class="agenda-dos"><section><h2>Mi horario semanal</h2>{% if not agenda.clases %}<p class="text-muted">Aún no tienes clases registradas en tu horario.</p>{% endif %}<div class="table-responsive" id="calendario"></div></section>
+<div class="agenda-dos"><section><h2>Mi horario semanal</h2>{% if not agenda.clases %}<p class="text-muted">Aún no tienes clases registradas en tu horario.</p>{% endif %}<div class="table-responsive calendario-estudiante" id="calendario"></div></section>
 <section><h2>Franjas disponibles</h2>{% if abierta %}<p class="alert alert-info">Ya tienes una asesoría abierta o en seguimiento de esta materia.</p>{% endif %}
-<div id="lista-oferta" data-abierta="{{ 1 if abierta else 0 }}" data-materia="{{ asesorada or '' }}"></div></section></div>
+<div id="lista-oferta" data-abierta="{{ 1 if abierta else 0 }}" data-inscrito="{{ 1 if estudiante.estado == 'Inscrito' else 0 }}" data-materia="{{ asesorada or '' }}"></div></section></div>
 <section class="bloque-horario mt-3"><h2>Franja seleccionada</h2><div id="concentrado"></div><p id="aviso-oferta" role="status" class="my-2"></p></section>
 <div class="modal fade" id="bloque-citas" tabindex="-1" aria-labelledby="titulo-citas"><div class="modal-dialog"><div class="modal-content">
 <div class="modal-header"><h2 id="titulo-citas">Mis asesorías</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div><div class="modal-body">

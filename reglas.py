@@ -142,13 +142,16 @@ def nivel(grado):
     return {"Ing.": 1, "Mtro.": 2, "Mtra.": 2, "Dr.": 3, "Dra.": 3}.get(grado, 0)
 
 
-def opciones_franja(id_docente, id_carrera, dia_fecha, bloquear=False):
+def opciones_franja(id_docente, id_carrera, dia_fecha, bloquear=False, *, incluir_previas=False):
     materias = db.query(
         "SELECT DISTINCT m.id_materia,m.nombre FROM v_materias_elegibles_tutor e "
         "JOIN tutor_materias tm USING(id_docente,id_materia) JOIN materias m USING(id_materia) "
         "JOIN docentes d USING(id_docente) JOIN carreras c ON c.id_carrera=e.id_carrera "
-        "WHERE e.id_docente=%s AND e.id_carrera=%s AND tm.autorizada=1 AND d.habilitado_tutor=1 AND c.activa=1 ORDER BY m.nombre",
-        (id_docente, id_carrera),
+        "WHERE e.id_docente=%s AND e.id_carrera=%s AND tm.autorizada=1 AND d.habilitado_tutor=1 AND c.activa=1 "
+        "AND (%s OR EXISTS (SELECT 1 FROM v_horario_docente_actual h "
+        "WHERE h.id_docente=e.id_docente AND h.id_carrera=e.id_carrera AND h.id_materia=e.id_materia)) "
+        "ORDER BY m.nombre",
+        (id_docente, id_carrera, incluir_previas),
     )
     if not dentro_de_oferta(dia_fecha):
         return materias, [], "Elige un día hábil de la semana actual o la siguiente."
@@ -258,7 +261,10 @@ def restablecer_dia_docente(id_docente, dia_fecha):
 
     publicadas = recuperadas = omitidas = 0
     for franja in franjas:
-        materias, bloques, _ = opciones_franja(id_docente, franja["id_carrera"], dia_fecha)
+        # La franja ya existía, incluso si se publicó con las reglas anteriores.
+        materias, bloques, _ = opciones_franja(
+            id_docente, franja["id_carrera"], dia_fecha, incluir_previas=True
+        )
         disponible = (
             franja["id_materia"] in {m["id_materia"] for m in materias}
             and franja["id_bloque"] in {b["id_bloque"] for b in bloques}
@@ -293,6 +299,7 @@ def restablecer_dia_docente(id_docente, dia_fecha):
                     r["id_materia_inscrita"] or franja["id_materia"],
                     aceptar_cruce=bool(r["cruce_aceptado"]),
                     origen=origen,
+                    asesorada=r["id_materia"],
                 )
             except ReglaNegocio:
                 db.execute(
@@ -329,7 +336,7 @@ CONSULTA_CITAS = """
  SELECT r.id_reserva, r.id_franja, r.id_estudiante, r.tipo_cita, r.id_reserva_origen, r.estado_cita,
  r.confirmada,r.cruce_aceptado,r.id_materia_inscrita,r.motivo_cancelacion,r.resultado_atencion,
  e.matricula, CONCAT_WS(' ', e.nombres, e.apellido_paterno, e.apellido_materno) AS estudiante,
- f.fecha, f.id_docente, f.id_carrera, f.id_materia, f.id_bloque, b.etiqueta AS horario, b.hora_inicio,
+ f.fecha, f.id_docente, f.id_carrera, m.id_materia, f.id_bloque, b.etiqueta AS horario, b.hora_inicio,
  c.nombre AS carrera, m.nombre AS materia,
  CONCAT_WS(' ', d.nombres, d.apellido_paterno, d.apellido_materno) AS docente,
  a.id_acuerdo, COALESCE(a.descripcion_acuerdo,r.anotaciones) AS descripcion_acuerdo,
@@ -341,7 +348,7 @@ CONSULTA_CITAS = """
  JOIN franjas_asesoria f ON f.id_franja = r.id_franja
  JOIN bloques_horarios b ON b.id_bloque = f.id_bloque
  JOIN carreras c ON c.id_carrera = f.id_carrera
- JOIN materias m ON m.id_materia = f.id_materia
+ JOIN materias m ON m.id_materia = COALESCE(r.id_materia_asesorada, f.id_materia)
  JOIN docentes d ON d.id_docente = f.id_docente
  LEFT JOIN acuerdos a ON a.id_reserva = r.id_reserva
  LEFT JOIN reservas_asesoria s ON s.id_reserva_origen = r.id_reserva
@@ -399,21 +406,30 @@ def reservas_activas(id_franja, bloquear=False):
 
 
 # Valida elegibilidad, carrera, carga, horarios, duplicados y cupo de una reserva
-def oferta_estudiante(estudiante, id_materia, inscrita, id_docente=None):
+def oferta_estudiante(
+    estudiante, id_materia, inscrita, id_docente=None, *,
+    incluir_pasadas=False, incluir_suspendidas=False
+):
     if not id_materia or not inscrita:
         return []
+    semana_actual, semana_siguiente = semanas()
     sql = (
-        CONSULTA_FRANJA.format(cupo="cupo.lugares_libres,")
+        CONSULTA_FRANJA.format(cupo="cupo.lugares_libres, asesorada.nombre AS materia_asesorada,")
         + """
-      JOIN v_materias_elegibles_tutor et ON et.id_docente=f.id_docente
-        AND et.id_carrera=f.id_carrera AND et.id_materia=f.id_materia
-      JOIN tutor_materias tm ON tm.id_docente=f.id_docente AND tm.id_materia=f.id_materia AND tm.autorizada=1
+      JOIN v_materias_asesorables_franja alcance ON alcance.id_franja=f.id_franja
       JOIN v_materias_asesoria_estudiante elegida ON elegida.id_estudiante=%s
-        AND elegida.id_materia=f.id_materia AND elegida.id_materia_inscrita=%s
+        AND elegida.id_materia=alcance.id_materia AND elegida.id_materia_inscrita=%s
+      JOIN materias asesorada ON asesorada.id_materia=elegida.id_materia
       JOIN v_franjas_cupo cupo ON cupo.id_franja=f.id_franja
-      WHERE f.id_carrera=%s AND f.id_materia=%s AND f.estado='Publicada' AND d.habilitado_tutor=1
-        AND c.activa=1 AND f.fecha BETWEEN %s AND %s
-        AND NOT EXISTS (SELECT 1 FROM bloqueos_asesoria bl WHERE bl.id_docente=f.id_docente AND f.fecha BETWEEN bl.desde AND bl.hasta)
+      WHERE f.id_carrera=%s AND alcance.id_materia=%s AND c.activa=1
+        AND f.fecha BETWEEN %s AND %s
+        AND (
+          (f.estado='Publicada' AND NOT EXISTS (
+            SELECT 1 FROM bloqueos_asesoria bl
+            WHERE bl.id_docente=f.id_docente AND f.fecha BETWEEN bl.desde AND bl.hasta
+          ))
+          OR (%s AND f.estado='Cancelada' AND f.motivo_cancelacion=%s)
+        )
     """
     )
     params = [
@@ -421,8 +437,10 @@ def oferta_estudiante(estudiante, id_materia, inscrita, id_docente=None):
         inscrita,
         estudiante["id_carrera"],
         id_materia,
-        hoy(),
-        semanas()[1][-1],
+        semana_actual[0] if incluir_pasadas else hoy(),
+        semana_siguiente[-1],
+        incluir_suspendidas,
+        MOTIVO_SUSPENSION_DOCENTE,
     ]
     if id_docente is not None:
         sql += " AND f.id_docente=%s"
@@ -432,13 +450,14 @@ def oferta_estudiante(estudiante, id_materia, inscrita, id_docente=None):
         for f in db.query(
             sql + " ORDER BY f.fecha,b.hora_inicio,docente", tuple(params)
         )
-        if futura(f["fecha"], f["hora_inicio"])
+        if incluir_pasadas or futura(f["fecha"], f["hora_inicio"])
     ]
 
 
 def clase_estudiante(id_estudiante, franja):
     return db.query(
-        "SELECT id_horario_est FROM v_horario_estudiante_actual "
+        "SELECT h.id_horario_est, m.nombre AS materia FROM v_horario_estudiante_actual h "
+        "JOIN materias m USING(id_materia) "
         "WHERE id_estudiante=%s AND dia_semana=%s AND id_bloque=%s",
         (id_estudiante, dia(franja["fecha"]), franja["id_bloque"]),
         one=True,
@@ -448,14 +467,15 @@ def clase_estudiante(id_estudiante, franja):
 def cita_abierta(id_estudiante, id_materia, excepto=None):
     return db.query(
         "SELECT r.id_reserva FROM reservas_asesoria r JOIN franjas_asesoria f USING(id_franja) "
-        "WHERE r.id_estudiante=%s AND f.id_materia=%s AND r.estado_cita='Programada' "
+        "WHERE r.id_estudiante=%s AND COALESCE(r.id_materia_asesorada,f.id_materia)=%s "
+        "AND r.estado_cita='Programada' "
         "AND r.id_reserva<>%s LIMIT 1",
         (id_estudiante, id_materia, excepto or 0),
         one=True,
     )
 
 
-def validar_reserva(estudiante, franja, inscrita, aceptar_cruce=False, origen=None):
+def validar_reserva(estudiante, franja, inscrita, aceptar_cruce=False, origen=None, *, asesorada=None):
     if not franja or franja["estado"] != "Publicada":
         raise ReglaNegocio("Esta asesoría fue cancelada. Selecciona otra franja.")
     if estudiante["estado"] != "Inscrito":
@@ -464,46 +484,48 @@ def validar_reserva(estudiante, franja, inscrita, aceptar_cruce=False, origen=No
         franja["fecha"], franja["hora_inicio"]
     ):
         raise ReglaNegocio("Elige una franja futura de esta semana o la siguiente.")
+    asesorada = asesorada or franja["id_materia"]
     if not any(
         f["id_franja"] == franja["id_franja"]
         for f in oferta_estudiante(
-            estudiante, franja["id_materia"], inscrita, franja["id_docente"]
+            estudiante, asesorada, inscrita, franja["id_docente"]
         )
     ):
         raise ReglaNegocio(
             "La materia o la franja ya no están disponibles. Selecciona otra."
         )
-    if reservas_activas(franja["id_franja"]) >= franja["cupo_maximo"]:
+    libres = franja["cupo_maximo"] - reservas_activas(franja["id_franja"])
+    if libres <= 0:
         raise ReglaNegocio("Esta franja ya no tiene cupo.")
     if origen and (
         franja["id_docente"] != origen["id_docente"]
-        or franja["id_materia"] != origen["id_materia"]
+        or asesorada != origen["id_materia"]
         or (franja["fecha"], hora_texto(franja["hora_inicio"]))
         <= (origen["fecha"], hora_texto(origen["hora_inicio"]))
     ):
         raise ReglaNegocio("Selecciona una franja posterior del mismo tutor y materia.")
-    if cita_abierta(
-        estudiante["id_estudiante"],
-        franja["id_materia"],
-        origen["id_reserva"] if origen else None,
-    ):
-        raise ReglaNegocio(
-            "Ya tienes una asesoría abierta o en seguimiento de esta materia."
-        )
     if db.query(
         "SELECT r.id_reserva FROM reservas_asesoria r JOIN franjas_asesoria f USING(id_franja) "
         "WHERE r.id_estudiante=%s AND f.fecha=%s AND f.id_bloque=%s AND r.estado_cita<>'Cancelada' LIMIT 1",
         (estudiante["id_estudiante"], franja["fecha"], franja["id_bloque"]),
         one=True,
     ):
-        raise ReglaNegocio("Ya tienes otra asesoría en ese horario.")
+        raise ReglaNegocio("Ya tienes una asesoría en ese horario.")
+    if cita_abierta(
+        estudiante["id_estudiante"],
+        asesorada,
+        origen["id_reserva"] if origen else None,
+    ):
+        raise ReglaNegocio(
+            "Ya tienes una asesoría abierta o en seguimiento de esta materia."
+        )
     if clase_estudiante(estudiante["id_estudiante"], franja) and (
         origen or not aceptar_cruce
     ):
         raise ReglaNegocio(
             "La asesoría coincide con una clase. Para reservarla debes aceptar el cruce bajo tu responsabilidad."
         )
-    return franja["cupo_maximo"] - reservas_activas(franja["id_franja"])
+    return libres
 
 
 def recorridos(filas):

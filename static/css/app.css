@@ -104,18 +104,6 @@ button.celda-agenda:hover,button.celda-agenda:focus-visible {outline:2px solid #
 .clase-agenda {background:#e2eaf0}
 .oferta-agenda {background:#b5e3f5; box-shadow: inset 0 0 0 2px #4391b8}
 .cerrada-agenda {background:#eaecee;color:#50565b}
-.cita-agenda {background:#d2e7d6}
-
-/* Cancelada previamente + Vuelve a estar disponible (Marco gris afuera, azul adentro) */
-.cerrada-agenda.oferta-agenda {
-  background: #b5e3f5;
-  color: #16324b;
-  box-shadow: inset 0 0 0 5px #95a5a6;
-}
-.cita-agenda.oferta-agenda {
-  background: #d2e7d6;
-  box-shadow: inset 0 0 0 5px #2e86c1;
-}
 
 /* Clase propia (Verde pastel para mejor lectura) */
 .celda-agenda.clase-agenda-propia,
@@ -124,18 +112,68 @@ button.celda-agenda.clase-agenda-propia:is(:hover, :focus-visible) {
   box-shadow: inset 0 0 0 2px #38b840;
 }
 
-/* Choque de clase propia + Disponible (Marco azul grueso afuera, verde adentro) */
-.clase-agenda-propia.oferta-agenda,
-button.celda-agenda.clase-agenda-propia.oferta-agenda:is(:hover, :focus-visible) {
-  background-color: #c8f0cc;
-  box-shadow: inset 0 0 0 5px #2e86c1;
+/* La franja superpuesta modifica el contorno. El fondo indica el compromiso del estudiante. */
+.calendario-estudiante .clase-agenda-propia {
+  --agenda-fondo: #c8f0cc;
+  --agenda-borde: #38b840;
+  --agenda-texto: #144d18;
 }
-
-.clase-agenda-propia.cerrada-agenda { box-shadow: inset 0 0 0 4px #66717a; }
-.clase-agenda-propia.cita-agenda { box-shadow: inset 0 0 0 4px var(--exito-borde); }
+.calendario-estudiante .oferta-agenda {
+  --agenda-fondo: #b5e3f5;
+  --agenda-borde: #4391b8;
+  --agenda-texto: #123c52;
+}
+.calendario-estudiante .cita-agenda {
+  --agenda-fondo: #d8e2ff;
+  --agenda-borde: #03345c;
+  --agenda-texto: #03345c;
+}
+.calendario-estudiante .cerrada-agenda {
+  --agenda-fondo: #eaecee;
+  --agenda-borde: #95a5a6;
+  --agenda-texto: #50565b;
+}
+.calendario-estudiante .cruce-agenda-oferta {
+  --agenda-borde: #4391b8;
+  --agenda-grosor: 4px;
+}
+.calendario-estudiante .cruce-agenda-cita {
+  --agenda-borde: #03345c;
+  --agenda-grosor: 4px;
+}
+.calendario-estudiante .bloqueo-agenda-materia,
+.btn.oferta-bloqueada-materia {
+  --bloqueo-fondo: #fce1e4;
+  --bloqueo-borde: #b02a37;
+  --bloqueo-texto: #842029;
+}
+.calendario-estudiante .bloqueo-agenda-materia {
+  --agenda-borde: var(--bloqueo-borde);
+}
+.calendario-estudiante .oferta-agenda.bloqueo-agenda-materia {
+  --agenda-fondo: var(--bloqueo-fondo);
+  --agenda-texto: var(--bloqueo-texto);
+}
+.btn.oferta-bloqueada-materia {
+  --bs-btn-disabled-bg: var(--bloqueo-fondo);
+  --bs-btn-disabled-color: var(--bloqueo-texto);
+  --bs-btn-disabled-border-color: var(--bloqueo-borde);
+  --bs-btn-disabled-opacity: 1;
+}
+.calendario-estudiante .tabla-semanal .celda-agenda:is(.clase-agenda-propia, .oferta-agenda, .cita-agenda, .cerrada-agenda) {
+  background-color: var(--agenda-fondo);
+  color: var(--agenda-texto);
+  box-shadow: inset 0 0 0 var(--agenda-grosor, 2px) var(--agenda-borde);
+}
 
 .celda-agenda[data-tono="0"] {background:#fff2ac}.celda-agenda[data-tono="1"] {background:#b5e3f5}.celda-agenda[data-tono="2"] {background:#d9ead1}.celda-agenda[data-tono="3"] {background:#eadcf3}
 .sel-agenda,.rel-activa,.fila-elegida {outline:2px solid #17496b;outline-offset:-2px}
+.calendario-estudiante button.celda-agenda:is(:hover, :focus-visible, .sel-agenda, .rel-activa) {
+  outline-offset: -6px;
+}
+.calendario-estudiante button.celda-agenda:focus-visible {
+  outline-style: dashed;
+}
 tr.fila-elegida>td,tr.rel-activa>td {background:#d8eaf6}
 .agenda-semanas {display:flex;gap:.5rem;flex-wrap:wrap;margin:.65rem 0}
 .agenda-dos {display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:1rem}

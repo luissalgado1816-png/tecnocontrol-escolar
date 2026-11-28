@@ -16,11 +16,13 @@
 {% else %}<tr><td colspan="5">{{ 'Corrige las fechas para consultar.' if errores else 'No hay franjas para el rango seleccionado.' if hasta and hasta != desde else 'No hay franjas para la fecha seleccionada.' }}</td></tr>{% endfor %}</tbody></table></div>
 {% else %}
 <h2 class="h6 mt-4">Estudiantes del {{ elegida.fecha|fecha }} · {{ elegida.horario|bloque }} · {{ elegida.materia }}</h2>
-<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Número de control</th><th>Estudiante</th><th>Tipo</th><th>Estado</th><th>Atención</th><th>Cita</th></tr></thead>
-<tbody>{% for r in citas %}<tr><td>{{ r.matricula }}</td><td>{{ r.estudiante }}</td><td>{{ r.tipo_cita }}</td><td>{{ r.estado_cita|replace('No asistio','No asistió') }}</td><td>
+<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Número de control</th><th>Estudiante</th><th>Materia asesorada</th><th>Tipo</th><th>Estado</th><th>Atención</th><th>Cita</th></tr></thead>
+<tbody>{% for r in citas %}<tr><td>{{ r.matricula }}</td><td>{{ r.estudiante }}</td><td>{{ r.materia }}</td><td>{{ r.tipo_cita }}</td><td>
+  {{ r.estado_cita|replace('No asistio','No asistió') }}{% if r.estado_cita=='Programada' %} · {{ 'Confirmada' if r.confirmada else 'Pendiente de confirmación' }}{% endif %}
+</td><td>
 <a class="btn btn-primary btn-sm" href="{{ url_for('tutor.acuerdo',id_reserva=r.id_reserva,desde=desde,hasta=hasta or none) }}">{{ 'Registrar atención' if r.estado_cita=='Programada' else 'Ver atención' }}</a>
 </td><td>{% if r.estado_cita=='Programada' %}<button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelar-{{ r.id_reserva }}">Cancelar</button>{% endif %}</td></tr>
-{% else %}<tr><td colspan="6">Aún no hay estudiantes con reserva en esta franja.</td></tr>{% endfor %}</tbody></table></div>
+{% else %}<tr><td colspan="7">Aún no hay estudiantes con reserva en esta franja.</td></tr>{% endfor %}</tbody></table></div>
 {% for r in citas if r.estado_cita=='Programada' %}
 <div id="cancelar-{{ r.id_reserva }}" class="modal fade" tabindex="-1" aria-labelledby="titulo-cancelar-{{ r.id_reserva }}"><div class="modal-dialog"><div class="modal-content">
   <div class="modal-header"><h2 id="titulo-cancelar-{{ r.id_reserva }}">Cancelar asesoría</h2></div>

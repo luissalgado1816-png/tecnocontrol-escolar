@@ -3,7 +3,7 @@
 {% block contenido %}
 <h1 class="h4 mb-4">Confirmar reserva</h1>
 <dl class="row g-3 mb-4">
-  <dt class="col-md-4">Materia</dt><dd class="col-md-8">{{ franja.materia }}</dd>
+  <dt class="col-md-4">Materia para asesoría</dt><dd class="col-md-8">{{ materia_asesorada }}</dd>
   <dt class="col-md-4">Tutor</dt><dd class="col-md-8">{{ franja.docente }}</dd>
   <dt class="col-md-4">Carrera</dt><dd class="col-md-8">{{ franja.carrera }}</dd>
   <dt class="col-md-4">Fecha</dt><dd class="col-md-8">{{ franja.fecha|fecha_dia }}</dd>
@@ -13,7 +13,11 @@
 <form method="post" class="d-flex gap-3 flex-wrap">
   <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
   <input type="hidden" name="inscrita" value="{{ inscrita }}">
-  {% if cruce %}<div class="alert alert-warning w-100"><label><input type="checkbox" name="aceptar_cruce" value="1" required> Esta franja coincide con mi horario de clases. Acepto reservar bajo mi responsabilidad.</label></div>{% endif %}
+  <input type="hidden" name="asesoria" value="{{ asesorada }}">
+  {% if cruce %}<div class="alert alert-warning w-100">
+    <p class="mb-2">Esta franja coincide con tu clase de {{ cruce.materia }}.</p>
+    <label><input type="checkbox" name="aceptar_cruce" value="1" required> Acepto el cruce con mi clase y deseo reservar.</label>
+  </div>{% endif %}
   <button class="btn btn-primary">Confirmar reserva</button>
   <a class="btn btn-outline-secondary" href="{{ regreso }}">Volver a la oferta</a>
 </form>

@@ -16,7 +16,11 @@ import reglas
 
 bp = Blueprint("estudiante", __name__, url_prefix="/estudiante")
 ROL = "consulta_seguimiento_est"
-MOTIVOS_CANCELACION_DOCENTE = ("Suspensión del docente", "Cancelada por el docente")
+MOTIVOS_CANCELACION_DOCENTE = (
+    reglas.MOTIVO_SUSPENSION_DOCENTE,
+    reglas.MOTIVO_SUSPENSION_NO_RESTABLECIDA,
+    "Cancelada por el docente",
+)
 
 
 def _estudiante():
@@ -55,7 +59,15 @@ def reservar():
     asesorada = reglas.entero(request.args.get("asesoria"))
     if asesorada not in {m["id_materia"] for m in alternativas}:
         asesorada = seleccion
-    disponibles = reglas.oferta_estudiante(estudiante, asesorada, seleccion)
+    publicadas = reglas.oferta_estudiante(
+        estudiante,
+        asesorada,
+        seleccion,
+        incluir_pasadas=True,
+        incluir_suspendidas=estudiante["estado"] == "Inscrito",
+    )
+    semana_actual, semana_siguiente = reglas.semanas()
+    fechas = (semana_actual[0], semana_siguiente[-1])
     agenda = reglas.calendario_base()
     agenda["semana"] = int(request.args.get("semana") == "1")
     agenda["franja_cancelada"] = session.pop("franja_cancelada", None)
@@ -65,56 +77,35 @@ def reservar():
             "id": f["id_franja"],
             "fecha": f["fecha"].isoformat(),
             "bloque": f["id_bloque"],
-            "materia": f["materia"],
+            "materia": f["materia_asesorada"],
             "docente": f["docente"],
             "cupo": f["cupo_maximo"],
             "libres": int(f["lugares_libres"]),
+            "pasada": not reglas.futura(f["fecha"], f["hora_inicio"]),
+            "suspendida": f["estado"] == "Cancelada",
             "horario": f["horario"],
             "url": url_for(
-                "estudiante.confirmar", id_franja=f["id_franja"], inscrita=seleccion
+                "estudiante.confirmar",
+                id_franja=f["id_franja"],
+                inscrita=seleccion,
+                asesoria=asesorada if asesorada != f["id_materia"] else None,
             ),
         }
-        for f in disponibles
+        for f in publicadas
     ]
-    if asesorada and estudiante["estado"] == "Inscrito":
-        suspendidas = db.query(
-            "SELECT f.id_franja,f.fecha,f.id_bloque,b.hora_inicio,b.etiqueta,m.nombre AS materia,"
-            "CONCAT_WS(' ',d.nombres,d.apellido_paterno,d.apellido_materno) AS docente FROM franjas_asesoria f "
-            "JOIN docentes d USING(id_docente) JOIN materias m USING(id_materia) JOIN bloques_horarios b USING(id_bloque) "
-            "JOIN tutor_materias tm ON tm.id_materia=f.id_materia AND tm.id_docente=f.id_docente "
-            "WHERE f.estado='Cancelada' AND f.motivo_cancelacion='Suspensión del docente' AND f.id_materia=%s AND f.id_carrera=%s "
-            "AND d.habilitado_tutor=1 AND tm.autorizada=1 AND f.fecha BETWEEN %s AND %s ORDER BY f.fecha,b.hora_inicio",
-            (
-                asesorada,
-                estudiante["id_carrera"],
-                reglas.hoy(),
-                reglas.semanas()[1][-1],
-            ),
-        )
-        agenda["oferta"].extend(
-            {
-                "id": f["id_franja"],
-                "fecha": f["fecha"].isoformat(),
-                "bloque": f["id_bloque"],
-                "materia": f["materia"],
-                "docente": f["docente"],
-                "horario": f["etiqueta"],
-                "suspendida": True,
-            }
-            for f in suspendidas
-            if reglas.futura(f["fecha"], f["hora_inicio"])
-        )
     citas = reglas.citas(
         "r.id_estudiante=%s AND f.fecha BETWEEN %s AND %s",
-        (id_est, reglas.semanas()[0][0], reglas.semanas()[1][-1]),
+        (id_est, *fechas),
     )
     agenda["citas"] = [
         {
             "id": r["id_reserva"],
+            "id_franja": r["id_franja"],
             "fecha": r["fecha"].isoformat(),
             "bloque": r["id_bloque"],
             "materia": r["materia"],
             "estado": r["estado_cita"],
+            "futura": reglas.futura(r["fecha"], r["hora_inicio"]),
             "cancelada_por_docente": r["estado_cita"] == "Cancelada"
             and r["motivo_cancelacion"] in MOTIVOS_CANCELACION_DOCENTE,
             "tipo": r["tipo_cita"],
@@ -144,10 +135,13 @@ def confirmar(id_franja):
     if not f:
         abort(404)
     inscrita = reglas.entero(request.values.get("inscrita")) or f["id_materia"]
+    asesorada = reglas.entero(request.values.get("asesoria", f["id_materia"]))
+    if asesorada is None:
+        abort(400)
     regreso = url_for(
         "estudiante.reservar",
         materia=inscrita,
-        asesoria=f["id_materia"],
+        asesoria=asesorada,
         semana=int(f["fecha"] >= reglas.semanas()[1][0]),
     )
     try:
@@ -157,21 +151,26 @@ def confirmar(id_franja):
                 estudiante = reglas.bloquear_estudiante(estudiante["id_estudiante"])
                 f = reglas.datos_franja(id_franja, bloquear=True)
                 acepta = request.form.get("aceptar_cruce") == "1"
-                reglas.validar_reserva(estudiante, f, inscrita, aceptar_cruce=acepta)
+                reglas.validar_reserva(
+                    estudiante, f, inscrita, aceptar_cruce=acepta, asesorada=asesorada
+                )
                 cruce = bool(reglas.clase_estudiante(estudiante["id_estudiante"], f))
                 db.insert(
-                    "INSERT INTO reservas_asesoria(id_franja,id_estudiante,id_materia_inscrita,cruce_aceptado,tipo_cita,estado_cita) "
-                    "VALUES(%s,%s,%s,%s,'Inicial','Programada')",
+                    "INSERT INTO reservas_asesoria(id_franja,id_estudiante,id_materia_inscrita,id_materia_asesorada,cruce_aceptado,tipo_cita,estado_cita) "
+                    "VALUES(%s,%s,%s,%s,%s,'Inicial','Programada')",
                     (
                         id_franja,
                         estudiante["id_estudiante"],
                         inscrita,
+                        asesorada,
                         int(cruce and acepta),
                     ),
                 )
             flash("Asesoría programada. Tu lugar quedó apartado.", "success")
             return redirect(regreso)
-        libres = reglas.validar_reserva(estudiante, f, inscrita, aceptar_cruce=True)
+        libres = reglas.validar_reserva(
+            estudiante, f, inscrita, aceptar_cruce=True, asesorada=asesorada
+        )
     except (reglas.ReglaNegocio, MySQLError) as e:
         if isinstance(e, reglas.ReglaNegocio) and f and f["estado"] == "Cancelada":
             _avisar_franja_cancelada(f)
@@ -183,6 +182,10 @@ def confirmar(id_franja):
         franja=f,
         libres=libres,
         inscrita=inscrita,
+        asesorada=asesorada,
+        materia_asesorada=db.query(
+            "SELECT nombre FROM materias WHERE id_materia=%s", (asesorada,), one=True
+        )["nombre"],
         cruce=reglas.clase_estudiante(estudiante["id_estudiante"], f),
         regreso=regreso,
     )
@@ -256,6 +259,11 @@ def cita_estado(id_reserva):
 def historial():
     estudiante = _estudiante()
     filas = reglas.citas("r.id_estudiante=%s", (estudiante["id_estudiante"],))
+    grupo_por_cita = {
+        cita["id_reserva"]: grupo
+        for grupo in reglas.recorridos(filas)
+        for cita in grupo
+    }
     return render_template(
-        "estudiante/historial.html", filas=filas, grupos=reglas.recorridos(filas)
+        "estudiante/historial.html", filas=filas, grupo_por_cita=grupo_por_cita
     )
